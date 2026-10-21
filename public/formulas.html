@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070d1e">
+<title>High-Yield Formula Sheet — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .formula-card {
+    background: #ffffff;
+    border: 1.5px solid var(--pm-border-light);
+    border-radius: var(--pm-radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    transition: all 0.15s ease;
+    box-shadow: var(--pm-shadow-sm);
+  }
+  .formula-card:hover {
+    border-color: #2563eb;
+    box-shadow: var(--pm-shadow-md);
+  }
+  .formula-math {
+    font-family: var(--pm-font-mono);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    background: #f1f5f9;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin: 8px 0;
+    display: inline-block;
+    letter-spacing: 0.03em;
+  }
+  .tab-pill {
+    padding: 9px 18px;
+    border-radius: 9999px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1.5px solid #cbd5e1;
+    background: #fff;
+    color: #475569;
+    transition: all 0.15s ease;
+  }
+  .tab-pill.active {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  }
+</style>
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" style="max-width: 860px;">
+  <!-- Header banner -->
+  <div style="margin-bottom: 24px;">
+    <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #2563eb; letter-spacing: 0.05em;">Exam Cheatsheets</div>
+    <h1 style="font-size: 1.6rem; margin: 4px 0 8px;">High-Yield Formula Hub</h1>
+    <p style="color: #64748b; font-size: 0.95rem; margin: 0;">
+      Essential formulas, laws, and exam marking traps for WAEC, JAMB, and NECO.
+    </p>
+  </div>
+
+  <!-- Subject Tabs -->
+  <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;">
+    <button class="tab-pill active" onclick="loadSubjectFormulas('physics', this)">⚡ Physics</button>
+    <button class="tab-pill" onclick="loadSubjectFormulas('mathematics', this)">📐 Mathematics</button>
+    <button class="tab-pill" onclick="loadSubjectFormulas('chemistry', this)">🧪 Chemistry</button>
+  </div>
+
+  <!-- Search input -->
+  <div style="margin-bottom: 20px;">
+    <input type="text" id="formula-search" class="pm-input" placeholder="Search formulas by topic, symbol or concept..." oninput="filterFormulas()" style="border-radius: 12px; padding: 12px 16px;">
+  </div>
+
+  <!-- List container -->
+  <div id="formula-list">
+    <div class="pm-skeleton" style="height: 90px; margin-bottom: 12px;"></div>
+    <div class="pm-skeleton" style="height: 90px; margin-bottom: 12px;"></div>
+    <div class="pm-skeleton" style="height: 90px;"></div>
+  </div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Formula Hub');
+renderBottomNav();
+
+let allFormulas = [];
+let activeSubject = 'physics';
+
+async function loadSubjectFormulas(subject, btnEl) {
+  activeSubject = subject;
+  document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+
+  const container = document.getElementById('formula-list');
+  container.innerHTML = `
+    <div class="pm-skeleton" style="height: 90px; margin-bottom: 12px;"></div>
+    <div class="pm-skeleton" style="height: 90px; margin-bottom: 12px;"></div>
+  `;
+
+  try {
+    const res = await api(`/formulas?subject=${subject}`);
+    allFormulas = res.formulas || [];
+    renderFormulasList(allFormulas);
+  } catch (err) {
+    container.innerHTML = `<div class="pm-card" style="padding:24px; text-align:center; color:#64748b;">Could not load formulas. Please retry.</div>`;
+  }
+}
+
+function renderFormulasList(list) {
+  const container = document.getElementById('formula-list');
+  if (!list.length) {
+    container.innerHTML = `<div class="pm-card" style="padding:32px; text-align:center; color:#64748b;">No matching formulas found.</div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(item => `
+    <div class="formula-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:#2563eb; letter-spacing:0.04em;">${item.topic}</span>
+        <button onclick="copyFormula('${item.formula.replace(/'/g, "\\'")}')" class="pm-btn pm-btn-xs pm-btn-ghost" title="Copy formula" style="font-size:0.75rem; color:#64748b;">
+          Copy
+        </button>
+      </div>
+      <div class="formula-math">${item.formula}</div>
+      <div style="font-size:0.88rem; color:#475569; margin-top:4px;">
+        💡 <strong>Note:</strong> ${item.notes}
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterFormulas() {
+  const q = document.getElementById('formula-search').value.toLowerCase().trim();
+  if (!q) {
+    renderFormulasList(allFormulas);
+    return;
+  }
+  const filtered = allFormulas.filter(f =>
+    f.topic.toLowerCase().includes(q) ||
+    f.formula.toLowerCase().includes(q) ||
+    f.notes.toLowerCase().includes(q)
+  );
+  renderFormulasList(filtered);
+}
+
+function copyFormula(text) {
+  navigator.clipboard.writeText(text);
+  showToast(`Copied formula: ${text}`);
+}
+
+(async () => {
+  await requireLogin();
+  loadSubjectFormulas('physics');
+})();
+</script>
+</body>
+</html>

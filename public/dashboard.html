@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Command Center — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .cmd-header {
+    background: linear-gradient(135deg, #090f20 0%, #172554 100%);
+    color: #ffffff;
+    border-radius: var(--pm-radius-xl);
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+  .stat-chip {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 10px 14px;
+    text-align: center;
+    flex: 1;
+    min-width: 70px;
+  }
+  .stat-chip .val {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.1;
+  }
+  .stat-chip .lbl {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 3px;
+  }
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (min-width: 640px) {
+    .quick-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  .quick-tile {
+    background: #ffffff;
+    border: 1.5px solid var(--pm-border-light);
+    border-radius: var(--pm-radius-lg);
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.18s ease;
+    box-shadow: var(--pm-shadow-sm);
+  }
+  .quick-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--pm-shadow-md);
+    border-color: var(--pm-brand-primary);
+  }
+  .tile-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" id="dashboard-content">
+  <div class="pm-skeleton" style="height: 180px; margin-bottom: 16px;"></div>
+  <div class="pm-skeleton" style="height: 140px; margin-bottom: 16px;"></div>
+  <div class="pm-skeleton" style="height: 200px;"></div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Command Center');
+renderBottomNav();
+
+(async () => {
+  const content = document.getElementById('dashboard-content');
+  try {
+    const me = await requireLogin();
+
+    // If student has not set up profile, prompt onboarding
+    if (!me.onboarded) {
+      content.innerHTML = `
+        <div class="pm-card pm-text-center" style="padding: 40px 24px; max-width: 520px; margin: 40px auto;">
+          <div style="width: 60px; height: 60px; background: #eff6ff; border-radius: 18px; color: #2563eb; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            ${getIcon('target', '', 32)}
+          </div>
+          <h2 style="margin-bottom: 8px;">Let's Set Up Your Exam Goal</h2>
+          <p style="color: #64748b; margin-bottom: 24px; font-size: 0.95rem;">
+            PrepMaster AI needs to know your exam, subjects, and target score to calibrate your personalized study plan.
+          </p>
+          <a href="/onboarding.html" class="pm-btn pm-btn-primary pm-btn-lg" style="width: 100%;">
+            Start 1-Minute Calibration
+          </a>
+        </div>
+      `;
+      return;
+    }
+
+    // Fetch mistake bank for accurate "Next Best Move"
+    let mistakesData = { weakTopics: [], dueForRevision: [] };
+    try {
+      mistakesData = await api('/mistakes');
+    } catch {}
+
+    const stats = me.stats || {};
+    const accuracy = stats.totalQuestions ? Math.round((stats.totalCorrect / stats.totalQuestions) * 100) : 0;
+    const mission = me.mission;
+    const missionPct = mission ? Math.min(100, Math.round((mission.askedCount / mission.targetCount) * 100)) : 0;
+    const examName = (me.profile && me.profile.exam) || 'JAMB';
+
+    // Target and estimated score calculations
+    const targetScore = examName === 'JAMB' ? 280 : 85;
+    const estimatedScore = examName === 'JAMB'
+      ? Math.round(180 + (accuracy / 100) * 150)
+      : Math.round(45 + (accuracy / 100) * 45);
+    const scoreGap = Math.max(0, targetScore - estimatedScore);
+
+    // Exam countdown calculation
+    let countdownText = 'Upcoming';
+    let countdownDays = null;
+    if (me.profile && me.profile.examDate) {
+      countdownDays = Math.ceil((new Date(me.profile.examDate) - new Date()) / 86400000);
+      countdownText = countdownDays >= 0 ? `${countdownDays} days to exam` : 'Exam completed';
+    }
+
+    // Determine "Next Best Move"
+    let nextMoveSubject = (me.profile && me.profile.weakSubject) || 'mathematics';
+    let nextMoveTopic = 'General High-Priority Topics';
+    let nextMoveAccuracy = 52;
+    let nextMoveReason = 'Holding your estimated score back';
+
+    if (mistakesData.dueForRevision && mistakesData.dueForRevision.length) {
+      const topDue = mistakesData.dueForRevision[0];
+      nextMoveSubject = topDue.subject;
+      nextMoveTopic = topDue.topic;
+      nextMoveAccuracy = 45;
+      nextMoveReason = 'Revision interval due today to prevent memory decay';
+    } else if (mistakesData.weakTopics && mistakesData.weakTopics.length) {
+      const topWeak = mistakesData.weakTopics[0];
+      nextMoveSubject = topWeak.subject;
+      nextMoveTopic = topWeak.topic;
+      nextMoveAccuracy = Math.round(topWeak.accuracy * 100);
+      nextMoveReason = `${topWeak.attempts - topWeak.correct} missed questions in recent practice`;
+    }
+
+    const greetingName = me.user.name ? me.user.name.split(' ')[0] : 'Scholar';
+
+    content.innerHTML = `
+      <!-- Command Center Header (Target Score & Stats) -->
+      <div class="cmd-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em;">Personal Command Center</div>
+            <h1 style="color: #ffffff; font-size: 1.6rem; margin: 2px 0 0;">Welcome back, ${greetingName} 👋</h1>
+          </div>
+          ${countdownDays !== null ? `
+            <div style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.15); padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: #38bdf8;">
+              ${countdownText}
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Target vs Estimated Score Progress -->
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 16px; margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+            <div>
+              <span class="subtle" style="color: #94a3b8;">Current Est. Score:</span>
+              <strong style="font-size: 1.25rem; color: #ffffff; margin-left: 6px;">${estimatedScore}</strong>
+            </div>
+            <div>
+              <span class="subtle" style="color: #94a3b8;">Target:</span>
+              <strong style="font-size: 1.25rem; color: #38bdf8; margin-left: 6px;">${targetScore}</strong>
+              <span style="font-size: 0.78rem; color: #f59e0b; margin-left: 6px;">(${scoreGap} pts to go)</span>
+            </div>
+          </div>
+          <div class="pm-progress" style="background: rgba(255,255,255,0.1); height: 8px;">
+            <div class="pm-progress-bar" style="width: ${Math.min(100, Math.round((estimatedScore / targetScore) * 100))}%;"></div>
+          </div>
+        </div>
+
+        <!-- Stats Chips -->
+        <div style="display: flex; gap: 8px; justify-content: space-between;">
+          <div class="stat-chip">
+            <div class="val" style="color: #f59e0b;">🔥 ${stats.currentStreak || 0}</div>
+            <div class="lbl">Streak</div>
+          </div>
+          <div class="stat-chip">
+            <div class="val">${stats.level || 1}</div>
+            <div class="lbl">Level</div>
+          </div>
+          <div class="stat-chip">
+            <div class="val" style="color: #38bdf8;">${stats.xp || 0}</div>
+            <div class="lbl">XP</div>
+          </div>
+          <div class="stat-chip">
+            <div class="val" style="color: #10b981;">${accuracy}%</div>
+            <div class="lbl">Accuracy</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signature: YOUR NEXT BEST MOVE (Rescue Card) -->
+      <div class="pm-card pm-card-rescue" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px; color: #b45309; font-weight: 700; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              ${getIcon('target', '', 16)}
+              Your Next Best Move
+            </div>
+            <h2 style="font-size: 1.25rem; margin: 4px 0 2px; color: #0f172a;">
+              ${subjectLabel(nextMoveSubject)}: ${nextMoveTopic}
+            </h2>
+            <p style="font-size: 0.88rem; color: #475569; margin: 0; line-height: 1.4;">
+              ${nextMoveReason}. Master this concept to close your score gap.
+            </p>
+          </div>
+          <span style="background: #fee2e2; color: #dc2626; font-size: 0.8rem; font-weight: 800; padding: 4px 8px; border-radius: 8px;">
+            ${nextMoveAccuracy}% Acc
+          </span>
+        </div>
+        <div style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
+          <button onclick="launchRescueSession('${nextMoveSubject}', '${encodeURIComponent(nextMoveTopic)}')" class="pm-btn pm-btn-rescue pm-btn-sm" style="flex: 1;">
+            ${getIcon('zap', '', 16)}
+            Start Rescue Session
+          </button>
+          <a href="/tutor.html?topic=${encodeURIComponent(nextMoveTopic)}" class="pm-btn pm-btn-outline pm-btn-sm" style="background: #fff;">
+            ${getIcon('coach', '', 16)}
+            Ask AI Coach
+          </a>
+        </div>
+      </div>
+
+      <!-- Today's Mission Card -->
+      ${mission ? `
+        <div class="pm-card" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 32px; height: 32px; background: #eff6ff; border-radius: 8px; color: #2563eb; display: flex; align-items: center; justify-content: center;">
+                ${getIcon('target', '', 18)}
+              </div>
+              <div>
+                <h3 style="margin: 0; font-size: 1.05rem;">Today's Mission</h3>
+                <span class="subtle">${subjectLabel(mission.subject)}${mission.topic ? ' &bull; ' + mission.topic : ''}</span>
+              </div>
+            </div>
+            <span class="pm-badge ${mission.completed ? 'pm-badge-emerald' : 'pm-badge-primary'}">
+              ${mission.completed ? 'Completed 🎉' : `${mission.askedCount}/${mission.targetCount} Qs`}
+            </span>
+          </div>
+          <div class="pm-progress" style="height: 8px; margin: 12px 0 10px;">
+            <div class="pm-progress-bar ${mission.completed ? 'pm-progress-bar-emerald' : ''}" style="width: ${missionPct}%;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <span class="muted" style="font-size: 0.82rem;">Target: ${mission.targetAccuracy}% accuracy</span>
+            <a href="/practice.html?subject=${mission.subject}" class="pm-btn pm-btn-sm ${mission.completed ? 'pm-btn-secondary' : 'pm-btn-primary'}">
+              ${mission.completed ? 'Keep Practising' : 'Continue Mission'}
+            </a>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Quick Action Navigation Hub -->
+      <h3 style="margin: 24px 0 12px; font-size: 1.1rem; color: #0f172a;">Action Command Hub</h3>
+      <div class="quick-grid">
+        <a href="/tutor.html" class="quick-tile" style="border-color: #38bdf8; background: #f0f9ff;">
+          <div class="tile-icon" style="background: #0284c7; color: #fff;">
+            ${getIcon('camera', '', 20)}
+          </div>
+          <div>
+            <div style="font-weight: 800; font-size: 0.95rem; color: #0369a1;">📷 Snap &amp; Solve</div>
+            <div class="subtle" style="color: #0284c7;">Instant photo AI solver</div>
+          </div>
+        </a>
+
+        <a href="/mock.html" class="quick-tile">
+          <div class="tile-icon" style="background: #fdf2f8; color: #db2777;">
+            ${getIcon('cbt', '', 20)}
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">Timed CBT</div>
+            <div class="subtle">Official exam simulator</div>
+          </div>
+        </a>
+
+        <a href="/practice.html" class="quick-tile">
+          <div class="tile-icon" style="background: #eff6ff; color: #2563eb;">
+            ${getIcon('practice', '', 20)}
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">Past Questions</div>
+            <div class="subtle">WAEC &amp; JAMB bank</div>
+          </div>
+        </a>
+
+        <a href="/formulas.html" class="quick-tile">
+          <div class="tile-icon" style="background: #fefce8; color: #ca8a04;">
+            ${getIcon('formula', '', 20)}
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">Formula Hub</div>
+            <div class="subtle">High-yield cheatsheets</div>
+          </div>
+        </a>
+
+        <a href="/leaderboard.html" class="quick-tile">
+          <div class="tile-icon" style="background: #fef3c7; color: #d97706;">
+            ${getIcon('trophy', '', 20)}
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">Leaderboard</div>
+            <div class="subtle">Top Nigerian scholars</div>
+          </div>
+        </a>
+
+        <a href="/mistakes.html" class="quick-tile">
+          <div class="tile-icon" style="background: #fffbeb; color: #d97706;">
+            ${getIcon('crosshair', '', 20)}
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">Mistake Bank</div>
+            <div class="subtle">${me.dueReviewCount > 0 ? `${me.dueReviewCount} due topics` : 'Weakness tracking'}</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Plan Status Bar -->
+      <div class="pm-card" style="margin-top: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; background: #faf5ff; border-color: #f3e8ff;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; background: #9333ea; color: #fff; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+            ${getIcon('star', '', 20)}
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: #581c87;">
+              ${me.subscription.active ? 'PrepMaster Premium Active' : 'Free Practice Plan'}
+            </div>
+            <div class="subtle" style="color: #7e22ce;">
+              ${me.subscription.active ? `Unlimited until ${fmtDate(me.subscription.expiresAt)}` : '5 free questions per day &bull; Upgrade for unlimited CBT'}
+            </div>
+          </div>
+        </div>
+        ${!me.subscription.active ? `
+          <a href="/premium.html" class="pm-btn pm-btn-sm" style="background: #9333ea; color: #fff;">
+            Upgrade Pass
+          </a>
+        ` : ''}
+      </div>
+    `;
+  } catch (err) {
+    content.innerHTML = `
+      <div class="pm-card pm-text-center" style="padding: 30px;">
+        <p class="error">Failed to load your command center. Please refresh.</p>
+        <button onclick="window.location.reload()" class="pm-btn pm-btn-secondary">Retry</button>
+      </div>
+    `;
+  }
+})();
+</script>
+</body>
+</html>

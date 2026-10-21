@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Calibrate Your Exam Plan — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .step-pane {
+    display: none;
+    animation: pmSlideUp 0.25s ease;
+  }
+  .step-pane.active {
+    display: block;
+  }
+  .exam-card-opt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border: 1.5px solid var(--pm-border-light);
+    border-radius: var(--pm-radius-md);
+    background: #ffffff;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: all 0.15s ease;
+  }
+  .exam-card-opt:hover {
+    border-color: var(--pm-brand-primary);
+    background: #f8fafc;
+  }
+  .exam-card-opt.selected {
+    border-color: var(--pm-brand-primary);
+    background: var(--pm-brand-primary-soft);
+    box-shadow: 0 0 0 1px var(--pm-brand-primary);
+  }
+</style>
+</head>
+<body style="background:var(--pm-bg-canvas);">
+
+<header style="padding:16px 20px; border-bottom:1px solid #e2e8f0; background:#fff; text-align:center;">
+  <div style="font-weight:800; font-size:1.15rem; color:#0f172a;">
+    PrepMaster <span style="color:#2563eb;">AI</span> &bull; Plan Calibration
+  </div>
+</header>
+
+<main class="pm-container-narrow" style="padding-top:32px;">
+  <!-- Wizard Step Progress Indicator -->
+  <div style="margin-bottom:24px;">
+    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700; color:#64748b; margin-bottom:6px;">
+      <span id="step-label">Step 1 of 4</span>
+      <span id="step-name">Exam Selection</span>
+    </div>
+    <div class="pm-progress" style="height:6px;">
+      <div id="step-progress-bar" class="pm-progress-bar" style="width:25%;"></div>
+    </div>
+  </div>
+
+  <div class="pm-card" style="box-shadow:var(--pm-shadow-lg); padding:28px 24px;">
+
+    <!-- STEP 1: Exam Selection -->
+    <div class="step-pane active" id="step-1">
+      <h2 style="font-size:1.4rem; margin-bottom:6px;">Which exam are you targeting?</h2>
+      <p class="muted" style="margin-bottom:20px;">We calibrate syllabus weights and question standards to your exam.</p>
+
+      <div class="exam-card-opt selected" data-exam="JAMB">
+        <div style="width:36px; height:36px; background:#eff6ff; color:#2563eb; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">J</div>
+        <div style="flex:1;">
+          <strong style="color:#0f172a; font-size:1rem;">JAMB (UTME)</strong>
+          <div class="subtle">4 subjects &bull; 400 score scale &bull; Computer Based Test</div>
+        </div>
+      </div>
+
+      <div class="exam-card-opt" data-exam="WAEC">
+        <div style="width:36px; height:36px; background:#f0fdf4; color:#16a34a; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">W</div>
+        <div style="flex:1;">
+          <strong style="color:#0f172a; font-size:1rem;">WAEC (WASSCE)</strong>
+          <div class="subtle">Senior School Certificate &bull; Objective + Theory</div>
+        </div>
+      </div>
+
+      <div class="exam-card-opt" data-exam="NECO">
+        <div style="width:36px; height:36px; background:#fef3c7; color:#d97706; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">N</div>
+        <div style="flex:1;">
+          <strong style="color:#0f172a; font-size:1rem;">NECO (SSCE)</strong>
+          <div class="subtle">National Examinations Council</div>
+        </div>
+      </div>
+
+      <div class="exam-card-opt" data-exam="POST-UTME">
+        <div style="width:36px; height:36px; background:#fdf2f8; color:#db2777; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">P</div>
+        <div style="flex:1;">
+          <strong style="color:#0f172a; font-size:1rem;">Post-UTME Screening</strong>
+          <div class="subtle">University Admission Screening Tests</div>
+        </div>
+      </div>
+
+      <button onclick="goToStep(2)" class="pm-btn pm-btn-primary pm-btn-lg pm-btn-block" style="margin-top:20px;">
+        Continue to Date &amp; Subjects &rarr;
+      </button>
+    </div>
+
+    <!-- STEP 2: Exam Date & Subjects -->
+    <div class="step-pane" id="step-2">
+      <h2 style="font-size:1.4rem; margin-bottom:6px;">Exam Date &amp; Subjects</h2>
+      <p class="muted" style="margin-bottom:20px;">When is your exam, and which subjects are you writing?</p>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="exam-date-input">Target Exam Date</label>
+        <input type="date" id="exam-date-input" class="pm-input" required>
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="subjects-input">Your Subjects (comma-separated)</label>
+        <input type="text" id="subjects-input" class="pm-input" value="Mathematics, English, Physics, Chemistry" placeholder="e.g. Mathematics, English, Physics, Chemistry">
+        <div class="subtle" style="margin-top:4px;">At least 2 subjects required.</div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:24px;">
+        <button onclick="goToStep(1)" class="pm-btn pm-btn-secondary" style="flex:1;">Back</button>
+        <button onclick="goToStep(3)" class="pm-btn pm-btn-primary" style="flex:2;">Continue &rarr;</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Weakness & Target Course -->
+    <div class="step-pane" id="step-3">
+      <h2 style="font-size:1.4rem; margin-bottom:6px;">Strengths &amp; Target Goal</h2>
+      <p class="muted" style="margin-bottom:20px;">This ensures your study plan prioritizes where you gain the most points.</p>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="weak-sub-input">Your Most Challenging Subject</label>
+        <input type="text" id="weak-sub-input" class="pm-input" value="Mathematics" placeholder="e.g. Mathematics">
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="strong-sub-input">Your Strongest Subject</label>
+        <input type="text" id="strong-sub-input" class="pm-input" value="English" placeholder="e.g. English">
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="target-course-input">Target University &amp; Course (Optional)</label>
+        <input type="text" id="target-course-input" class="pm-input" placeholder="e.g. Medicine, UNILAG">
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:24px;">
+        <button onclick="goToStep(2)" class="pm-btn pm-btn-secondary" style="flex:1;">Back</button>
+        <button onclick="goToStep(4)" class="pm-btn pm-btn-primary" style="flex:2;">Continue &rarr;</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Daily Minutes & Confidence -->
+    <div class="step-pane" id="step-4">
+      <h2 style="font-size:1.4rem; margin-bottom:6px;">Study Pace &amp; Confidence</h2>
+      <p class="muted" style="margin-bottom:20px;">How much time can you realistically dedicate each day?</p>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="daily-minutes-select">Daily Available Study Time</label>
+        <select id="daily-minutes-select" class="pm-select">
+          <option value="30">30 minutes / day (Light)</option>
+          <option value="60" selected>60 minutes / day (Recommended)</option>
+          <option value="90">90 minutes / day (Intensive)</option>
+          <option value="120">2 hours / day (Sprint Mode)</option>
+        </select>
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="confidence-select">How confident do you feel right now?</label>
+        <select id="confidence-select" class="pm-select">
+          <option value="1">1 — Worried &amp; Need major help</option>
+          <option value="2">2 — Shaky on several topics</option>
+          <option value="3" selected>3 — Average &bull; Can pass with structure</option>
+          <option value="4">4 — Good &bull; Aiming for top percentile</option>
+          <option value="5">5 — Very Confident</option>
+        </select>
+      </div>
+
+      <div id="onboard-error" class="error" style="display:none; margin-bottom:12px;"></div>
+
+      <div style="display:flex; gap:10px; margin-top:24px;">
+        <button onclick="goToStep(3)" class="pm-btn pm-btn-secondary" style="flex:1;">Back</button>
+        <button id="finish-btn" onclick="submitOnboarding()" class="pm-btn pm-btn-primary pm-btn-lg" style="flex:2;">
+          Generate My Plan ✨
+        </button>
+      </div>
+    </div>
+
+    <!-- Final Animated State -->
+    <div class="step-pane" id="step-loading" style="text-align:center; padding:36px 12px;">
+      <div style="width:54px; height:54px; color:#2563eb; margin:0 auto 16px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+      </div>
+      <h2 style="font-size:1.4rem; margin-bottom:8px;">Calibrating Your Personalized Plan...</h2>
+      <p class="muted">Balancing syllabus weights, past question distributions, and revision intervals.</p>
+    </div>
+
+  </div>
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+requireLogin();
+
+let selectedExam = 'JAMB';
+
+// Default exam date set to 60 days from now
+const defaultDate = new Date();
+defaultDate.setDate(defaultDate.getDate() + 60);
+document.getElementById('exam-date-input').value = defaultDate.toISOString().split('T')[0];
+
+document.querySelectorAll('.exam-card-opt').forEach((card) => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.exam-card-opt').forEach((c) => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedExam = card.dataset.exam;
+  });
+});
+
+function goToStep(num) {
+  document.querySelectorAll('.step-pane').forEach((p) => p.classList.remove('active'));
+  document.getElementById(`step-${num}`).classList.add('active');
+
+  const names = ['', 'Exam Selection', 'Date & Subjects', 'Focus & Target', 'Study Pace'];
+  document.getElementById('step-label').textContent = `Step ${num} of 4`;
+  document.getElementById('step-name').textContent = names[num];
+  document.getElementById('step-progress-bar').style.width = `${num * 25}%`;
+}
+
+async function submitOnboarding() {
+  const errEl = document.getElementById('onboard-error');
+  errEl.style.display = 'none';
+
+  const examDate = document.getElementById('exam-date-input').value;
+  const subjects = document.getElementById('subjects-input').value.split(',').map((s) => s.trim()).filter(Boolean);
+  const weakSubject = document.getElementById('weak-sub-input').value.trim();
+  const strongSubject = document.getElementById('strong-sub-input').value.trim();
+  const dailyMinutes = Number(document.getElementById('daily-minutes-select').value);
+  const confidenceLevel = Number(document.getElementById('confidence-select').value);
+  const targetCourse = document.getElementById('target-course-input').value.trim() || null;
+
+  if (!examDate || subjects.length < 2 || !weakSubject || !strongSubject) {
+    errEl.textContent = 'Please fill in your exam date and at least two subjects.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Show celebratory calibration screen
+  document.querySelectorAll('.step-pane').forEach((p) => p.classList.remove('active'));
+  document.getElementById('step-loading').classList.add('active');
+
+  try {
+    await api('/onboarding', {
+      method: 'POST',
+      body: {
+        exam: selectedExam,
+        examDate,
+        subjects,
+        weakSubject,
+        strongSubject,
+        dailyMinutes,
+        confidenceLevel,
+        targetCourse,
+      },
+    });
+
+    setTimeout(() => {
+      window.location.href = '/dashboard.html';
+    }, 1200);
+  } catch (err) {
+    goToStep(4);
+    errEl.textContent = 'Failed to save plan. Please ensure your weak/strong subjects match recognized names.';
+    errEl.style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Personalized Study Plan — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .priority-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: #ffffff;
+    border: 1.5px solid var(--pm-border-light);
+    border-radius: var(--pm-radius-md);
+    margin-bottom: 8px;
+    transition: all 0.15s ease;
+  }
+  .priority-row:hover {
+    border-color: var(--pm-brand-primary);
+    box-shadow: var(--pm-shadow-sm);
+  }
+  .time-block {
+    text-align: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 8px;
+  }
+</style>
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" id="study-plan-content">
+  <div class="pm-skeleton" style="height: 180px; margin-bottom: 16px;"></div>
+  <div class="pm-skeleton" style="height: 240px;"></div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Study Plan');
+renderBottomNav();
+
+(async () => {
+  const content = document.getElementById('study-plan-content');
+  try {
+    await requireLogin();
+    const { profile, plan } = await api('/study-plan');
+
+    const prioritiesHtml = plan.subjectPriority.map((s, i) => {
+      const isWeak = s.status === 'weak';
+      const isMod = s.status === 'moderate';
+      return `
+        <div class="priority-row">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="width:24px; height:24px; border-radius:50%; background:${isWeak ? '#fee2e2' : (isMod ? '#fef3c7' : '#ecfdf5')}; color:${isWeak ? '#dc2626' : (isMod ? '#d97706' : '#059669')}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.75rem;">
+              ${i + 1}
+            </span>
+            <div>
+              <strong style="color:#0f172a; font-size:0.95rem;">${subjectLabel(s.slug)}</strong>
+              <div class="subtle" style="text-transform:capitalize;">${s.status} priority focus</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="pm-badge ${isWeak ? 'pm-badge-rose' : (isMod ? 'pm-badge-amber' : 'pm-badge-emerald')}">
+              ${s.status.toUpperCase()}
+            </span>
+            <a href="/practice.html?subject=${s.slug}${isWeak ? '&rescue=1' : ''}" class="pm-btn pm-btn-sm ${isWeak ? 'pm-btn-rescue' : 'pm-btn-secondary'}" style="padding:4px 10px; font-size:0.8rem;">
+              Practice
+            </a>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    content.innerHTML = `
+      <!-- Exam Phase & Countdown Card -->
+      <div class="pm-card" style="background:linear-gradient(135deg, #090f20 0%, #1e3a8a 100%); color:#ffffff; border:1px solid rgba(255,255,255,0.12); box-shadow:var(--pm-shadow-lg);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div style="font-size:0.75rem; text-transform:uppercase; color:#94a3b8; font-weight:700; letter-spacing:0.05em;">Exam Milestone</div>
+            <h2 style="font-size:1.4rem; color:#ffffff; margin:2px 0;">${profile.exam} &bull; ${fmtDate(profile.examDate)}</h2>
+          </div>
+          <span style="background:rgba(56, 189, 248, 0.2); border:1px solid #38bdf8; color:#38bdf8; font-size:0.82rem; font-weight:700; padding:4px 12px; border-radius:999px;">
+            Phase: ${plan.phase.name}
+          </span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; background:rgba(15,23,42,0.6); padding:14px; border-radius:14px; border:1px solid rgba(255,255,255,0.1);">
+          <div style="text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#38bdf8; line-height:1;">${plan.daysLeft}</div>
+            <div style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase; font-weight:700; margin-top:4px;">Days Remaining</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#ffffff; line-height:1;">${plan.weeksLeft}</div>
+            <div style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase; font-weight:700; margin-top:4px;">Study Weeks</div>
+          </div>
+        </div>
+
+        <p style="margin:0; font-size:0.88rem; color:#cbd5e1; line-height:1.45;">
+          <strong>Strategic Focus:</strong> ${plan.phase.focus}
+        </p>
+      </div>
+
+      <!-- Daily Time Block Allocation -->
+      <div class="pm-card" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div>
+            <h3 style="margin:0; font-size:1.15rem;">Daily Routine (${plan.structure.totalMinutes} min / day)</h3>
+            <span class="subtle">Optimized distribution for memory retention</span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+          <div class="time-block">
+            <div style="font-size:1.25rem; font-weight:800; color:#2563eb;">${plan.structure.learningMinutes}m</div>
+            <div class="subtle" style="font-size:0.75rem; font-weight:700;">Learn</div>
+          </div>
+          <div class="time-block">
+            <div style="font-size:1.25rem; font-weight:800; color:#10b981;">${plan.structure.practiceMinutes}m</div>
+            <div class="subtle" style="font-size:0.75rem; font-weight:700;">Practice</div>
+          </div>
+          <div class="time-block">
+            <div style="font-size:1.25rem; font-weight:800; color:#f59e0b;">${plan.structure.revisionMinutes}m</div>
+            <div class="subtle" style="font-size:0.75rem; font-weight:700;">Revision</div>
+          </div>
+          <div class="time-block">
+            <div style="font-size:1.25rem; font-weight:800; color:#8b5cf6;">${plan.structure.reviewMinutes}m</div>
+            <div class="subtle" style="font-size:0.75rem; font-weight:700;">Review</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Priority Subjects Order -->
+      <div class="pm-card" style="margin-top:20px;">
+        <h3 style="margin-bottom:12px; font-size:1.15rem;">Calibrated Study Order</h3>
+        <p class="subtle" style="margin-bottom:16px;">We order your subjects by error frequency so you spend time where marks are won.</p>
+        ${prioritiesHtml}
+      </div>
+
+      <div style="margin-top:20px;">
+        <a href="/practice.html?subject=${plan.subjectPriority[0] ? plan.subjectPriority[0].slug : 'mathematics'}&rescue=1" class="pm-btn pm-btn-rescue pm-btn-lg pm-btn-block">
+          Start With Weakest Subject (${subjectLabel(plan.subjectPriority[0] ? plan.subjectPriority[0].slug : 'Mathematics')})
+        </a>
+      </div>
+    `;
+  } catch (err) {
+    if (err.status === 404) {
+      content.innerHTML = `
+        <div class="pm-card pm-text-center" style="padding:40px 20px;">
+          <h3>No Study Plan Calibrated Yet</h3>
+          <p class="muted">Complete the 1-minute profile calibration to generate your roadmap.</p>
+          <a href="/onboarding.html" class="pm-btn pm-btn-primary">Set Up Plan Now</a>
+        </div>
+      `;
+    } else {
+      content.innerHTML = `<div class="pm-card pm-text-center error">Could not load study plan.</div>`;
+    }
+  }
+})();
+</script>
+</body>
+</html>

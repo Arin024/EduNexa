@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070d1e">
+<title>Scholars Leaderboard — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .leader-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: #ffffff;
+    border: 1.5px solid var(--pm-border-light);
+    border-radius: var(--pm-radius-lg);
+    margin-bottom: 10px;
+    transition: all 0.15s ease;
+  }
+  .leader-item.is-me {
+    border-color: #2563eb;
+    background: #eff6ff;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.12);
+  }
+  .rank-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+  }
+  .rank-1 { background: #fef08a; color: #854d0e; }
+  .rank-2 { background: #e2e8f0; color: #475569; }
+  .rank-3 { background: #fed7aa; color: #9a3412; }
+  .rank-other { background: #f1f5f9; color: #64748b; }
+</style>
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" style="max-width: 860px;">
+  <!-- Header -->
+  <div style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); color: #fff; border-radius: 20px; padding: 28px 24px; margin-bottom: 24px;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom: 8px;">
+      <span style="font-size:1.5rem;">🏆</span>
+      <span style="text-transform: uppercase; font-size:0.8rem; font-weight:700; color:#38bdf8; letter-spacing:0.05em;">Weekly Hall of Fame</span>
+    </div>
+    <h1 style="font-size: 1.5rem; color:#fff; margin: 0 0 6px;">Top Nigerian Scholars</h1>
+    <p style="color: #94a3b8; font-size: 0.9rem; margin: 0;">
+      Rankings update automatically based on daily practice accuracy, study streaks, and CBT exam scores.
+    </p>
+  </div>
+
+  <div id="leaderboard-list">
+    <div class="pm-skeleton" style="height: 65px; margin-bottom: 10px;"></div>
+    <div class="pm-skeleton" style="height: 65px; margin-bottom: 10px;"></div>
+    <div class="pm-skeleton" style="height: 65px; margin-bottom: 10px;"></div>
+  </div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Leaderboard');
+renderBottomNav();
+
+(async () => {
+  await requireLogin();
+  const container = document.getElementById('leaderboard-list');
+
+  try {
+    const res = await api('/leaderboard');
+    const leaders = res.leaderboard || [];
+
+    if (!leaders.length) {
+      container.innerHTML = `<div class="pm-card" style="padding:32px; text-align:center; color:#64748b;">No scholars recorded yet this week. Answer questions to claim Rank #1!</div>`;
+      return;
+    }
+
+    container.innerHTML = leaders.map(s => {
+      let rankClass = 'rank-other';
+      let medal = '';
+      if (s.rank === 1) { rankClass = 'rank-1'; medal = '🥇 '; }
+      else if (s.rank === 2) { rankClass = 'rank-2'; medal = '🥈 '; }
+      else if (s.rank === 3) { rankClass = 'rank-3'; medal = '🥉 '; }
+
+      return `
+        <div class="leader-item ${s.isMe ? 'is-me' : ''}">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div class="rank-badge ${rankClass}">${s.rank}</div>
+            <div>
+              <div style="font-weight:700; font-size:0.98rem; color:#1e293b; display:flex; align-items:center; gap:6px;">
+                ${medal}${s.name} ${s.isMe ? '<span class="pm-badge pm-badge-primary" style="font-size:0.7rem; padding:2px 8px;">YOU</span>' : ''}
+              </div>
+              <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">
+                Level ${s.level} Scholar • 🔥 ${s.streak}-day streak • ${s.accuracy}% accuracy
+              </div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:800; font-size:1.1rem; color:#2563eb;">${s.xp.toLocaleString()}</div>
+            <div style="font-size:0.75rem; color:#64748b; text-transform:uppercase; font-weight:700;">XP</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    container.innerHTML = `<div class="pm-card" style="padding:24px; text-align:center; color:#64748b;">Could not load leaderboard data.</div>`;
+  }
+})();
+</script>
+</body>
+</html>

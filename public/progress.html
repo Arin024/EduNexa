@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Performance &amp; Journey — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .journey-timeline {
+    position: relative;
+    padding: 24px 0 10px;
+    margin: 20px 0;
+  }
+  .journey-track {
+    height: 12px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    position: relative;
+  }
+  .journey-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2563eb, #38bdf8);
+    border-radius: 999px;
+  }
+  .journey-pin {
+    position: absolute;
+    top: -28px;
+    transform: translateX(-50%);
+    background: #0f172a;
+    color: #38bdf8;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+  .journey-pin::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 4px 4px 0;
+    border-style: solid;
+    border-color: #0f172a transparent transparent;
+  }
+</style>
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" id="progress-content">
+  <div class="pm-skeleton" style="height: 180px; margin-bottom: 16px;"></div>
+  <div class="pm-skeleton" style="height: 220px;"></div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Performance Journey');
+renderBottomNav();
+
+(async () => {
+  const content = document.getElementById('progress-content');
+  try {
+    const me = await requireLogin();
+    const [{ report }, { records }] = await Promise.all([api('/report'), api('/records')]);
+
+    const accuracyPct = Math.round(report.accuracy * 100);
+    const targetScore = (me.profile && me.profile.exam === 'JAMB') ? 280 : 85;
+    const estScore = (me.profile && me.profile.exam === 'JAMB')
+      ? Math.round(180 + (accuracyPct / 100) * 150)
+      : Math.round(45 + (accuracyPct / 100) * 45);
+    const gap = Math.max(0, targetScore - estScore);
+
+    // Calculate score position % (scale 150 to 320 for JAMB)
+    const minScale = 150;
+    const maxScale = 320;
+    const scorePct = Math.min(100, Math.max(10, Math.round(((estScore - minScale) / (maxScale - minScale)) * 100)));
+
+    content.innerHTML = `
+      <!-- Visual Journey to Target Score -->
+      <div class="pm-card" style="background:linear-gradient(135deg, #090f20 0%, #1e293b 100%); color:#ffffff; border:1px solid rgba(255,255,255,0.12); box-shadow:var(--pm-shadow-lg);">
+        <div style="font-size:0.75rem; text-transform:uppercase; color:#94a3b8; font-weight:700; letter-spacing:0.05em;">Exam Trajectory</div>
+        <h2 style="font-size:1.5rem; color:#ffffff; margin:4px 0 16px;">Your Journey to ${targetScore} Points</h2>
+
+        <div class="journey-timeline">
+          <div class="journey-pin" style="left: ${scorePct}%;">Current: ${estScore}</div>
+          <div class="journey-track">
+            <div class="journey-fill" style="width: ${scorePct}%;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.75rem; color:#94a3b8; font-weight:700;">
+            <span>180</span>
+            <span>220</span>
+            <span>250</span>
+            <span style="color:#38bdf8;">Goal: ${targetScore}</span>
+            <span>320</span>
+          </div>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px 16px; margin-top:16px; font-size:0.9rem; line-height:1.45; color:#cbd5e1;">
+          ${gap > 0
+            ? `You are currently <strong>${gap} points</strong> from your target score. ${report.weakest ? `Focusing on <strong>${subjectLabel(report.weakest.subject)}</strong> is your fastest path to close the gap.` : 'Consistent daily missions will carry you across the finish line.'}`
+            : '🌟 You have met your target score projection! Keep revising to guarantee test-day consistency.'}
+        </div>
+      </div>
+
+      <!-- Weekly Analytics Grid -->
+      <div class="pm-card" style="margin-top:20px;">
+        <h2 style="font-size:1.25rem; margin-bottom:16px;">This Week's Momentum</h2>
+        <div class="pm-grid-4">
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:16px; text-align:center;">
+            <div style="font-size:1.6rem; font-weight:800; color:#2563eb;">${report.questionsAttempted}</div>
+            <div class="subtle" style="font-weight:700; text-transform:uppercase;">Questions Solved</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:16px; text-align:center;">
+            <div style="font-size:1.6rem; font-weight:800; color:${accuracyPct >= 65 ? '#10b981' : '#f59e0b'};">${accuracyPct}%</div>
+            <div class="subtle" style="font-weight:700; text-transform:uppercase;">Accuracy Rate</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:16px; text-align:center;">
+            <div style="font-size:1.6rem; font-weight:800; color:#0f172a;">${report.studyDays}/7</div>
+            <div class="subtle" style="font-weight:700; text-transform:uppercase;">Active Days</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:16px; text-align:center;">
+            <div style="font-size:1.6rem; font-weight:800; color:#8b5cf6;">+${report.xpEarned}</div>
+            <div class="subtle" style="font-weight:700; text-transform:uppercase;">XP Gained</div>
+          </div>
+        </div>
+
+        <!-- Intelligent Subject Narrative -->
+        <div style="margin-top:20px; display:flex; flex-direction:column; gap:8px;">
+          ${report.strongest ? `
+            <div style="display:flex; align-items:center; gap:10px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:10px; padding:10px 14px; font-size:0.9rem; color:#065f46;">
+              <span style="font-size:18px;">🔥</span>
+              <span>Strongest Subject: <strong>${subjectLabel(report.strongest.subject)}</strong> (${Math.round(report.strongest.accuracy * 100)}% accuracy)</span>
+            </div>
+          ` : ''}
+          ${report.weakest ? `
+            <div style="display:flex; align-items:center; gap:10px; background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:10px 14px; font-size:0.9rem; color:#9f1239;">
+              <span style="font-size:18px;">⚠️</span>
+              <span>Needs Attention: <strong>${subjectLabel(report.weakest.subject)}</strong> (${Math.round(report.weakest.accuracy * 100)}% accuracy) &mdash; <a href="/practice.html?subject=${report.weakest.subject}&rescue=1" style="color:#be123c; font-weight:700; text-decoration:underline;">Start Rescue Drill</a></span>
+            </div>
+          ` : ''}
+          ${report.mostImproved ? `
+            <div style="display:flex; align-items:center; gap:10px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:10px 14px; font-size:0.9rem; color:#1e40af;">
+              <span style="font-size:18px;">📈</span>
+              <span>Fastest Improving: <strong>${subjectLabel(report.mostImproved.subject)}</strong> (+${report.mostImproved.deltaPoints}% gain)</span>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <!-- Personal Hall of Fame / Records -->
+      <div class="pm-card" style="margin-top:20px;">
+        <h2 style="font-size:1.25rem; margin-bottom:14px;">🏆 Personal Records</h2>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px;">
+            <div class="subtle">Longest Continuous Streak</div>
+            <strong style="font-size:1.2rem; color:#f59e0b;">🔥 ${records.longestStreak || 0} Day${records.longestStreak === 1 ? '' : 's'}</strong>
+          </div>
+          ${records.mostQuestionsInADay ? `
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px;">
+              <div class="subtle">Best Daily Volume</div>
+              <strong style="font-size:1.2rem; color:#2563eb;">⚡ ${records.mostQuestionsInADay} Questions</strong>
+            </div>
+          ` : ''}
+          ${records.bestMockScore ? `
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px;">
+              <div class="subtle">Peak Mock Score</div>
+              <strong style="font-size:1.2rem; color:#10b981;">📝 ${records.bestMockScore.correct}/${records.bestMockScore.total} (${subjectLabel(records.bestMockScore.subject)})</strong>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    content.innerHTML = `
+      <div class="pm-card pm-text-center" style="padding:32px;">
+        <p class="error">Could not load progress data. Please refresh.</p>
+      </div>
+    `;
+  }
+})();
+</script>
+</body>
+</html>

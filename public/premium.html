@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>PrepMaster Pass &amp; Plans — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+  @media (min-width: 768px) {
+    .pricing-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  .pricing-card {
+    background: #ffffff;
+    border: 1.5px solid var(--pm-border-light);
+    border-radius: var(--pm-radius-xl);
+    padding: 28px 22px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    box-shadow: var(--pm-shadow-sm);
+    transition: all 0.18s ease;
+  }
+  .pricing-card:hover {
+    border-color: var(--pm-brand-primary);
+    box-shadow: var(--pm-shadow-lg);
+    transform: translateY(-3px);
+  }
+  .pricing-card.featured {
+    border-color: #2563eb;
+    box-shadow: var(--pm-shadow-glow), var(--pm-shadow-md);
+  }
+  .popular-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" id="premium-content">
+  <div class="pm-skeleton" style="height: 140px; margin-bottom: 16px;"></div>
+  <div class="pm-skeleton" style="height: 320px;"></div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('PrepMaster Pass');
+renderBottomNav();
+
+(async () => {
+  const content = document.getElementById('premium-content');
+  try {
+    let me = await requireLogin();
+    const { plans } = await api('/plans');
+    const urlParams = new URLSearchParams(window.location.search);
+    const isPaidReturn = urlParams.get('paid') === '1';
+    const isCancelled = urlParams.get('cancelled') === '1';
+    const initialRef = urlParams.get('ref') || sessionStorage.getItem('pm_pending_ref') || '';
+
+    let pendingRef = initialRef;
+    let pendingCashierUrl = sessionStorage.getItem('pm_pending_url') || '';
+    let selectedPlanObj = null;
+    let paymentVerified = false;
+
+    function renderPage() {
+      let statusBanner = '';
+
+      if (paymentVerified || (me.subscription.active && !pendingRef)) {
+        statusBanner = `
+          <div class="pm-card" style="background:#ecfdf5; border:2px solid #10b981; text-align:center; padding:28px 20px; margin-bottom:24px; border-radius:16px;">
+            <div style="font-size:2.8rem; margin-bottom:8px;">🎉</div>
+            <h2 style="color:#065f46; font-size:1.5rem; margin:0 0 8px; font-weight:800;">Payment Confirmed!</h2>
+            <p style="color:#047857; margin:0 auto 20px; max-width:520px; font-size:1.02rem; line-height:1.5;">
+              Your PrepMaster Pass is active${me.subscription.expiresAt ? ` until <strong>${fmtDate(me.subscription.expiresAt)}</strong>` : ''}. Unlimited questions, CBT mocks, and 24/7 AI tutor unlocked!
+            </p>
+            <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+              <a href="/dashboard.html" class="pm-btn pm-btn-primary" style="padding:12px 24px; font-size:1rem;">Go to Dashboard</a>
+              <a href="/practice.html" class="pm-btn pm-btn-secondary" style="padding:12px 24px; font-size:1rem;">Start Practice</a>
+            </div>
+          </div>
+        `;
+      } else if (pendingRef) {
+        statusBanner = `
+          <div class="pm-card" id="pending-card" style="background:#fffbeb; border:2px solid #f59e0b; text-align:center; padding:28px 20px; margin-bottom:28px; border-radius:16px; box-shadow:0 6px 20px rgba(245,158,11,0.18);">
+            <div style="font-size:2.8rem; margin-bottom:8px;">⏳</div>
+            <h2 style="color:#92400e; font-size:1.45rem; margin:0 0 8px; font-weight:800;">Awaiting Payment Confirmation</h2>
+            <p style="color:#78350f; margin:0 auto 16px; max-width:520px; font-size:0.98rem; line-height:1.5;">
+              If you have completed your card, bank transfer, or USSD payment on Bachs, click <strong>"I have made payment..."</strong> below to activate your pass.
+            </p>
+
+            <div style="font-size:0.86rem; color:#a16207; font-weight:600; margin-bottom:18px;">
+              Transaction Reference: <code style="background:#fef3c7; padding:4px 10px; border-radius:6px; font-size:0.92rem; font-family:var(--pm-font-mono);">${pendingRef}</code>
+            </div>
+
+            <div style="background:#fef3c7; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; margin:0 auto 20px; max-width:500px; text-align:left; font-size:0.88rem; color:#854d0e; line-height:1.45;">
+              ℹ️ <strong>Please note:</strong> The app will <strong>NOT</strong> move to the next page until you click <strong>"I have made payment..."</strong> below and the bank verifies your payment.
+            </div>
+
+            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+              <button id="btn-i-have-paid" class="pm-btn pm-btn-primary" style="font-size:1.1rem; padding:15px 32px; font-weight:800; width:100%; max-width:380px; box-shadow:0 4px 14px rgba(245,158,11,0.35);">
+                I have made payment...
+              </button>
+              <div id="verify-feedback" style="min-height:24px; width:100%; max-width:480px;"></div>
+              ${pendingCashierUrl ? `
+                <a href="${pendingCashierUrl}" style="color:#a16207; font-size:0.88rem; text-decoration:underline; margin-top:2px;">
+                  Need to finish paying on Bachs? Open payment page
+                </a>
+              ` : ''}
+              <button id="btn-cancel-pending" class="pm-btn pm-btn-ghost" style="font-size:0.86rem; color:#92400e; margin-top:4px;">
+                Choose another plan or cancel
+              </button>
+            </div>
+          </div>
+        `;
+      } else if (isCancelled) {
+        statusBanner = `
+          <div class="pm-card" style="background:#fef2f2; border:1px solid #fecaca; text-align:center; padding:18px; margin-bottom:24px; border-radius:12px;">
+            <h3 style="color:#991b1b; font-size:1.15rem; margin:0 0 4px;">Checkout Incomplete</h3>
+            <p style="color:#b91c1c; margin:0; font-size:0.92rem;">
+              Payment was not completed. Choose a plan below whenever you are ready to upgrade.
+            </p>
+          </div>
+        `;
+      }
+
+      const cardsHtml = plans.map((p) => {
+        const isPopular = p.id === 'MONTHLY';
+        return `
+          <div class="pricing-card ${isPopular ? 'featured' : ''}">
+            ${isPopular ? `<div class="popular-badge">Most Popular</div>` : ''}
+            <div>
+              <h3 style="font-size:1.2rem; color:#0f172a; margin-bottom:4px;">${p.label}</h3>
+              <div style="font-size:2.2rem; font-weight:800; color:#0f172a; line-height:1.1; margin:12px 0 4px;">
+                ${naira(p.naira)}
+              </div>
+              <div class="subtle" style="margin-bottom:20px;">${p.days} Days Full Access</div>
+
+              <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:24px; font-size:0.9rem; color:#475569;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="color:#10b981; font-weight:700;">✓</span> Unlimited practice questions
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="color:#10b981; font-weight:700;">✓</span> Full timed CBT exam mocks
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="color:#10b981; font-weight:700;">✓</span> 30 AI Tutor sessions / day
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="color:#10b981; font-weight:700;">✓</span> Spaced revision tracking
+                </div>
+              </div>
+            </div>
+
+            <button class="pm-btn ${isPopular ? 'pm-btn-primary' : 'pm-btn-secondary'} pm-btn-block" data-plan="${p.id}">
+              Select ${p.label}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      content.innerHTML = `
+        ${statusBanner}
+
+        <div style="text-align:center; max-width:620px; margin:0 auto 24px;">
+          <h1 style="font-size:2rem; margin-bottom:8px;">Supercharge Your Exam Preparation</h1>
+          <p style="color:#64748b; font-size:1.02rem;">
+            Get unlimited practice questions, full-length CBT mock exams, and personalized AI coaching breakdowns.
+          </p>
+        </div>
+
+        <div class="pricing-grid">
+          ${cardsHtml}
+        </div>
+
+        <div class="pm-card" style="margin-top:28px; background:#f8fafc; border:1px solid #e2e8f0; text-align:center; padding:24px; border-radius:14px;">
+          <div style="display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; color:#0f172a; margin-bottom:6px;">
+            ${getIcon('shield', '', 18)}
+            Secure Payment Processing
+          </div>
+          <p class="muted" style="margin:0; font-size:0.88rem;">
+            Payments are securely encrypted and handled via Bachs. Instant activation on both Web and WhatsApp.
+          </p>
+        </div>
+      `;
+
+      // Cancel / change plan handler
+      const cancelBtn = document.getElementById('btn-cancel-pending');
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+          pendingRef = '';
+          pendingCashierUrl = '';
+          sessionStorage.removeItem('pm_pending_ref');
+          sessionStorage.removeItem('pm_pending_url');
+          renderPage();
+        });
+      }
+
+      // Attach "I have made payment..." handler
+      const paidBtn = document.getElementById('btn-i-have-paid');
+      if (paidBtn) {
+        paidBtn.addEventListener('click', async () => {
+          const feedback = document.getElementById('verify-feedback');
+          paidBtn.disabled = true;
+          paidBtn.textContent = 'Verifying payment with Bachs…';
+          if (feedback) feedback.innerHTML = `<span style="color:#b45309; font-size:0.9rem;">Checking payment status with bank, please wait…</span>`;
+
+          try {
+            const check = await api(`/subscription/verify?ref=${encodeURIComponent(pendingRef)}`);
+            if (check.active) {
+              paymentVerified = true;
+              me.subscription.active = true;
+              me.subscription.expiresAt = check.expiresAt;
+              sessionStorage.removeItem('pm_pending_ref');
+              sessionStorage.removeItem('pm_pending_url');
+              if (feedback) feedback.innerHTML = `<span style="color:#15803d; font-weight:700; font-size:0.95rem;">✓ Payment Confirmed! Moving to dashboard…</span>`;
+              showToast('Payment confirmed! Pass activated.');
+              setTimeout(() => {
+                window.location.href = '/dashboard.html';
+              }, 1200);
+            } else {
+              // User clicked button, but Bachs hasn't recorded payment yet: DO NOT MOVE
+              paidBtn.disabled = false;
+              paidBtn.textContent = 'I have made payment...';
+              if (feedback) {
+                feedback.innerHTML = `
+                  <div style="background:#fee2e2; border:1px solid #fecaca; color:#b91c1c; padding:10px 14px; border-radius:8px; font-size:0.88rem; line-height:1.4; text-align:left;">
+                    ⚠️ <strong>Payment not yet confirmed.</strong> If you just completed the transfer or card payment, please allow 1–2 minutes for bank network clearance, then click <strong>"I have made payment..."</strong> again. (The app will not advance until confirmed).
+                  </div>
+                `;
+              }
+              showToast('Payment not yet confirmed by the bank. Please try again in 1 minute.');
+            }
+          } catch (err) {
+            paidBtn.disabled = false;
+            paidBtn.textContent = 'I have made payment...';
+            if (feedback) {
+              feedback.innerHTML = `
+                <div style="background:#fee2e2; border:1px solid #fecaca; color:#b91c1c; padding:10px 14px; border-radius:8px; font-size:0.88rem; text-align:left;">
+                  ⚠️ ${err.message || 'Status check failed. Please click "I have made payment..." again.'}
+                </div>
+              `;
+            }
+          }
+        });
+      }
+
+      // Attach plan selection buttons
+      document.querySelectorAll('[data-plan]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          btn.textContent = 'Opening checkout…';
+          try {
+            const { cashierUrl, reference } = await api('/subscription/checkout', {
+              method: 'POST',
+              body: { plan: btn.dataset.plan },
+            });
+            const refToUse = reference || (cashierUrl.includes('ref=') ? new URL(cashierUrl).searchParams.get('ref') : '') || `PM${Date.now()}`;
+            pendingRef = refToUse;
+            pendingCashierUrl = cashierUrl || '';
+            sessionStorage.setItem('pm_pending_ref', pendingRef);
+            if (pendingCashierUrl) {
+              sessionStorage.setItem('pm_pending_url', pendingCashierUrl);
+            }
+
+            // Direct redirect to Bachs cashier to complete card/transfer/USSD payment
+            window.location.href = cashierUrl;
+          } catch (err) {
+            showToast(err.message || 'Could not initiate checkout. Please try again.');
+            btn.disabled = false;
+            btn.textContent = 'Retry Selection';
+          }
+        });
+      });
+    }
+
+    renderPage();
+
+  } catch (err) {
+    content.innerHTML = `<div class="pm-card pm-text-center error">Could not load pricing plans.</div>`;
+  }
+})();
+</script>
+</body>
+</html>

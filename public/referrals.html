@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Refer &amp; Earn — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" id="referral-content">
+  <div class="pm-skeleton" style="height: 160px; margin-bottom: 16px;"></div>
+  <div class="pm-skeleton" style="height: 240px;"></div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Refer & Earn');
+renderBottomNav();
+
+(async () => {
+  const content = document.getElementById('referral-content');
+  try {
+    await requireLogin();
+    const r = await api('/referral');
+    const c = r.commission;
+
+    content.innerHTML = `
+      <!-- Referral Hero Banner -->
+      <div class="pm-card pm-card-hero-glow" style="text-align:center; padding:32px 20px;">
+        <div style="width:54px; height:54px; background:#eff6ff; color:#2563eb; border-radius:18px; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+          ${getIcon('gift', '', 28)}
+        </div>
+        <h1 style="font-size:1.6rem; margin-bottom:6px;">Invite Friends &bull; Earn 20% Cash</h1>
+        <p style="color:#64748b; font-size:0.95rem; max-width:480px; margin:0 auto 20px;">
+          Give friends bonus past questions. Earn a 20% cash commission whenever a referred student upgrades to a PrepMaster Pass.
+        </p>
+
+        <!-- Referral Link Box -->
+        <div style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:14px; padding:16px; max-width:540px; margin:0 auto;">
+          <div class="subtle" style="font-weight:700; text-transform:uppercase; margin-bottom:6px;">Your Personal Invite Link</div>
+          <div style="word-break:break-all; font-weight:700; color:#0f172a; font-size:0.95rem; margin-bottom:14px;">
+            ${r.referralLink}
+          </div>
+          <div class="pm-btn-row">
+            <button id="copy-link-btn" class="pm-btn pm-btn-secondary" style="flex:1;">
+              ${getIcon('share', '', 16)} Copy Link
+            </button>
+            <a href="https://wa.me/?text=${encodeURIComponent('Hey! Preparing for JAMB, WAEC or NECO? Use PrepMaster AI for past questions and AI tutoring: ' + r.referralLink)}" target="_blank" rel="noopener noreferrer" class="pm-btn pm-btn-emerald" style="flex:1;">
+              ${getIcon('whatsapp', '', 16)} Share on WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="pm-grid-2" style="margin-top:20px;">
+        <div class="pm-card" style="text-align:center;">
+          <div class="subtle" style="font-weight:700; text-transform:uppercase;">Friends Registered</div>
+          <div style="font-size:2.2rem; font-weight:800; color:#2563eb; margin:4px 0;">${r.invited}</div>
+          <div class="muted" style="font-size:0.85rem;">${r.becamePremium} upgraded to Premium</div>
+        </div>
+
+        <div class="pm-card" style="text-align:center;">
+          <div class="subtle" style="font-weight:700; text-transform:uppercase;">Available Earnings</div>
+          <div style="font-size:2.2rem; font-weight:800; color:#10b981; margin:4px 0;">${naira(c.availableKobo / 100)}</div>
+          <div class="muted" style="font-size:0.85rem;">${naira(c.holdingKobo / 100)} clearing in 7-day hold</div>
+        </div>
+      </div>
+
+      <!-- Withdrawal Guidance -->
+      <div class="pm-card" style="margin-top:20px; background:#fffbeb; border:1.5px solid #fde68a;">
+        <div style="display:flex; align-items:center; gap:8px; font-weight:700; color:#b45309; margin-bottom:6px;">
+          ${getIcon('zap', '', 18)} Payout &amp; Withdrawal
+        </div>
+        <p style="margin:0; font-size:0.88rem; color:#475569; line-height:1.5;">
+          Minimum withdrawal is N1,000. Send <strong>WITHDRAW</strong> to the WhatsApp bot with your OPay number or bank account details to receive your funds directly.
+        </p>
+      </div>
+    `;
+
+    document.getElementById('copy-link-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(r.referralLink);
+      showToast('Referral link copied to clipboard!');
+    });
+
+  } catch (err) {
+    content.innerHTML = `<div class="pm-card pm-text-center error">Could not load referral dashboard.</div>`;
+  }
+})();
+</script>
+</body>
+</html>

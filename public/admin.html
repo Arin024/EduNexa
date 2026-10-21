@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Admin Dashboard — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="site-topbar"></div>
+
+<main class="pm-container" id="content">
+  <div class="pm-skeleton" style="height:140px; margin-bottom:16px;"></div>
+  <div class="pm-skeleton" style="height:240px;"></div>
+</main>
+
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Admin Dashboard');
+
+function row(label, value) {
+  return `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:0.92rem;">
+      <span class="muted">${label}</span>
+      <strong style="color:#0f172a;">${value}</strong>
+    </div>
+  `;
+}
+
+async function loadWithdrawals() {
+  const { withdrawals } = await api('/admin/withdrawals');
+  const wrap = document.getElementById('withdrawals-wrap');
+  if (!withdrawals.length) {
+    wrap.innerHTML = '<p class="muted" style="margin:10px 0 0;">No pending withdrawals. All clear! 🎉</p>';
+    return;
+  }
+  wrap.innerHTML = withdrawals.map((w) => `
+    <div class="pm-card" style="background:#f8fafc; border:1px solid #e2e8f0; margin-top:10px; padding:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong style="color:#0f172a; font-size:1rem;">${w.reference}</strong>
+        <span class="pm-badge pm-badge-emerald" style="font-size:0.9rem;">${naira(Number(w.amount_kobo)/100)}</span>
+      </div>
+      <div class="muted" style="margin-top:4px;">Phone: +${w.phone}</div>
+      <div class="muted" style="margin-top:2px;">Payout: ${w.payout_details}</div>
+      <div class="pm-btn-row" style="margin-top:12px;">
+        <button class="pm-btn pm-btn-sm pm-btn-emerald" data-ref="${w.reference}" data-action="PAID">
+          Mark Paid
+        </button>
+        <button class="pm-btn pm-btn-sm pm-btn-danger" data-ref="${w.reference}" data-action="REJECTED">
+          Reject
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  wrap.querySelectorAll('button[data-ref]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        await api(`/admin/withdrawals/${btn.dataset.ref}/mark`, {
+          method: 'POST',
+          body: { action: btn.dataset.action }
+        });
+        showToast(`Withdrawal ${btn.dataset.action === 'PAID' ? 'marked paid' : 'rejected'}`);
+        loadWithdrawals();
+      } catch {
+        btn.disabled = false;
+        showToast('Operation failed. Please try again.');
+      }
+    });
+  });
+}
+
+(async () => {
+  const me = await requireLogin();
+  const content = document.getElementById('content');
+  if (!me.isAdmin) {
+    content.innerHTML = `
+      <div class="pm-card pm-text-center" style="max-width:480px; margin:40px auto; padding:32px 20px;">
+        <div style="width:48px; height:48px; background:#fee2e2; color:#dc2626; border-radius:12px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
+          ${getIcon('alertCircle', '', 24)}
+        </div>
+        <h2 style="margin-bottom:8px;">Access Restricted</h2>
+        <p class="muted" style="margin-bottom:20px;">You do not have administrative access to PrepMaster AI.</p>
+        <a href="/dashboard.html" class="pm-btn pm-btn-primary">Return to Command Center</a>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const { overview: o, revenue: r, difficultTopics } = await api('/admin/overview');
+    const aiUsage = await api('/admin/ai-usage?days=7');
+
+    content.innerHTML = `
+      <div style="margin-bottom:20px;">
+        <h1 style="font-size:1.6rem; margin-bottom:4px;">PrepMaster AI &bull; System Administration</h1>
+        <p class="muted">Live overview of student engagement, subscription revenue, and AI services.</p>
+      </div>
+
+      <!-- User Growth Grid -->
+      <div class="pm-card">
+        <h2 style="font-size:1.2rem; margin-bottom:14px;">User Growth &amp; Community</h2>
+        <div class="pm-grid-4">
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#2563eb;">${o.totalUsers}</div>
+            <div class="subtle" style="font-weight:700; text-transform:uppercase;">Total Registered</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#10b981;">${o.dailyActiveUsersToday}</div>
+            <div class="subtle" style="font-weight:700; text-transform:uppercase;">Active Today (DAU)</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#0f172a;">${o.activeUsers7d}</div>
+            <div class="subtle" style="font-weight:700; text-transform:uppercase;">Active 7 Days</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#8b5cf6;">${o.payingUsers}</div>
+            <div class="subtle" style="font-weight:700; text-transform:uppercase;">Paying Subscribers</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Metrics -->
+      <div class="pm-card" style="margin-top:16px;">
+        <h2 style="font-size:1.2rem; margin-bottom:12px;">Financial Performance</h2>
+        ${row('Total revenue (lifetime)', naira(r.totalRevenueKobo/100))}
+        ${row('Last 7 days revenue', naira(r.revenueLast7dKobo/100))}
+        ${row('Last 30 days revenue', naira(r.revenueLast30dKobo/100))}
+        ${row('Successful transactions', r.transactionsSuccess)}
+        ${row('Failed transactions', r.transactionsFailed)}
+        ${row('Commission owed (pending hold)', naira(r.pendingCommissionKobo/100))}
+        ${row('Commission paid out', naira(r.paidCommissionKobo/100))}
+      </div>
+
+      <!-- Engagement Metrics -->
+      <div class="pm-card" style="margin-top:16px;">
+        <h2 style="font-size:1.2rem; margin-bottom:12px;">Student Engagement &amp; Mastery</h2>
+        ${row('Questions answered (all-time)', o.questionsAnsweredTotal)}
+        ${row('Questions answered today', o.questionsAnsweredToday)}
+        ${row('Average accuracy across all practice', Math.round(o.averageAccuracy * 100) + '%')}
+        ${row('Average student streak', o.avgStreak + ' days')}
+        ${row('Students with 7+ day active streaks', o.studentsWithWeekStreak)}
+        ${row('Subscriptions churned in last 30d', o.churn30d)}
+      </div>
+
+      <!-- Difficult Topics System-wide -->
+      <div class="pm-card" style="margin-top:16px;">
+        <h2 style="font-size:1.2rem; margin-bottom:12px;">Most Difficult Topics (Site-wide)</h2>
+        ${difficultTopics.map((t) => row(
+          `${subjectLabel(t.subject)} — ${t.topic}`,
+          `<span style="color:#ef4444; font-weight:700;">${Math.round(t.accuracy * 100)}% accuracy</span> (${t.attempts} attempts)`
+        )).join('') || '<p class="muted">Not enough data logged yet.</p>'}
+      </div>
+
+      <!-- AI Usage Analytics -->
+      <div class="pm-card" style="margin-top:16px;">
+        <h2 style="font-size:1.2rem; margin-bottom:12px;">AI Coach Engine (Last 7 Days)</h2>
+        ${row('Total AI invocations', aiUsage.total)}
+        ${row('Successful responses', aiUsage.successCount)}
+        ${row('Failed requests', aiUsage.failureCount)}
+        ${row('Fallback explanations used', aiUsage.fallbackCount)}
+        <h3 style="font-size:1rem; margin:16px 0 8px;">Calls by Provider</h3>
+        ${aiUsage.byProvider.map((p) => row(p.provider, p.count)).join('') || '<p class="muted">No AI calls recorded yet.</p>'}
+      </div>
+
+      <!-- Pending Referral Withdrawals -->
+      <div class="pm-card" style="margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h2 style="font-size:1.2rem; margin:0;">Pending Referral Withdrawals</h2>
+          <button onclick="loadWithdrawals()" class="pm-btn pm-btn-sm pm-btn-secondary">
+            ${getIcon('refresh', '', 14)} Refresh
+          </button>
+        </div>
+        <div id="withdrawals-wrap">
+          <div class="pm-skeleton" style="height:60px;"></div>
+        </div>
+      </div>
+    `;
+    loadWithdrawals();
+  } catch (err) {
+    content.innerHTML = '<div class="pm-card pm-text-center error">Could not load admin data.</div>';
+  }
+})();
+</script>
+</body>
+</html>

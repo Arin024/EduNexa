@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Mistake Bank &amp; Revision — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .mistake-card {
+    background: #ffffff;
+    border: 1.5px solid var(--pm-border-light);
+    border-radius: var(--pm-radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.15s ease;
+  }
+  .mistake-card:hover {
+    border-color: #f59e0b;
+    box-shadow: var(--pm-shadow-md);
+  }
+  .miss-count-tag {
+    background: #fee2e2;
+    color: #dc2626;
+    font-weight: 800;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+</style>
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" id="mistakes-content">
+  <div class="pm-skeleton" style="height: 120px; margin-bottom: 16px;"></div>
+  <div class="pm-skeleton" style="height: 200px;"></div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Mistake Bank');
+renderBottomNav();
+
+(async () => {
+  const content = document.getElementById('mistakes-content');
+  try {
+    await requireLogin();
+    const { mistakeBank, weakTopics, dueForRevision } = await api('/mistakes');
+
+    // Due Spaced Repetition section
+    const dueHtml = dueForRevision && dueForRevision.length ? `
+      <div class="pm-card pm-card-rescue" style="margin-bottom: 24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div>
+            <div style="font-size:0.75rem; color:#b45309; text-transform:uppercase; font-weight:700; letter-spacing:0.05em;">
+              Spaced Revision Schedule
+            </div>
+            <h2 style="font-size:1.25rem; margin:2px 0 0; color:#0f172a;">
+              ${dueForRevision.length} Topic${dueForRevision.length === 1 ? '' : 's'} Due for Memory Reinforcement
+            </h2>
+          </div>
+          <span class="pm-badge pm-badge-amber">Due Today</span>
+        </div>
+        <p style="font-size:0.88rem; color:#475569; margin-bottom:16px;">
+          Topics you previously answered incorrectly. Revising them now seals the concept before exam day.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${dueForRevision.map((d) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; border:1px solid #fed7aa; border-radius:12px; padding:12px 14px;">
+              <div>
+                <strong style="font-size:0.95rem; color:#0f172a;">${subjectLabel(d.subject)} &bull; ${d.topic}</strong>
+                <div class="subtle" style="color:#9a3412;">Interval: ${d.intervalDays} day${d.intervalDays === 1 ? '' : 's'} since last drill</div>
+              </div>
+              <button onclick="launchRescueSession('${d.subject}', '${encodeURIComponent(d.topic)}')" class="pm-btn pm-btn-sm pm-btn-rescue">
+                ${getIcon('zap', '', 14)} Revise
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    // Repeated error patterns
+    const patternsHtml = weakTopics && weakTopics.length ? `
+      <div style="margin-bottom: 24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h2 style="font-size:1.25rem; margin:0; color:#0f172a;">Identified Error Patterns</h2>
+          <span class="subtle">Analyzed by AI across all practice</span>
+        </div>
+        ${weakTopics.slice(0, 5).map((w) => `
+          <div class="mistake-card">
+            <div style="flex:1;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span class="pm-badge pm-badge-primary">${subjectLabel(w.subject)}</span>
+                <strong style="font-size:0.95rem; color:#0f172a;">${w.topic}</strong>
+              </div>
+              <div class="subtle">
+                ${w.correct} correct out of ${w.attempts} attempts &bull; Estimated Accuracy: ${Math.round(w.accuracy * 100)}%
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span class="miss-count-tag">${w.attempts - w.correct} misses</span>
+              <button onclick="launchRescueSession('${w.subject}', '${encodeURIComponent(w.topic)}')" class="pm-btn pm-btn-sm pm-btn-secondary">
+                Fix Pattern
+              </button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    // Full subject breakdown
+    const bankHtml = mistakeBank && mistakeBank.length ? `
+      <div>
+        <h2 style="font-size:1.25rem; margin-bottom:14px; color:#0f172a;">Mistake History by Subject</h2>
+        ${mistakeBank.map((g) => `
+          <div class="pm-card" style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+              <h3 style="margin:0; font-size:1.1rem; color:#0f172a;">${subjectLabel(g.subject)}</h3>
+              <span class="subtle">${g.topics.reduce((acc, t) => acc + t.misses, 0)} total logged mistakes</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${g.topics.map((t) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0;">
+                  <span style="font-size:0.92rem; color:#334155;">${t.topic}</span>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="miss-count-tag" style="background:#fef3c7; color:#92400e;">${t.misses} miss${t.misses === 1 ? '' : 'es'}</span>
+                    <button onclick="launchRescueSession('${g.subject}', '${encodeURIComponent(t.topic)}')" class="pm-btn pm-btn-ghost pm-btn-sm" style="font-size:0.8rem; padding:4px 8px; color:#2563eb;">
+                      Rescue &rarr;
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : `
+      <div class="pm-card pm-text-center" style="padding:48px 20px;">
+        <div style="width:56px; height:56px; background:#ecfdf5; color:#10b981; border-radius:18px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+          ${getIcon('check', '', 28)}
+        </div>
+        <h3 style="font-size:1.3rem; margin-bottom:6px;">Clean Slate! No Mistakes Recorded</h3>
+        <p class="muted" style="max-width:380px; margin:0 auto 20px;">
+          As you practice past questions and take mock exams, any missed questions are automatically categorized here for focused revision.
+        </p>
+        <a href="/practice.html" class="pm-btn pm-btn-primary">Start Practising Questions</a>
+      </div>
+    `;
+
+    content.innerHTML = dueHtml + patternsHtml + bankHtml;
+  } catch (err) {
+    content.innerHTML = `
+      <div class="pm-card pm-text-center" style="padding:32px;">
+        <p class="error">Could not load your mistake bank. Please refresh.</p>
+      </div>
+    `;
+  }
+})();
+</script>
+</body>
+</html>

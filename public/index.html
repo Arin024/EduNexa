@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070d1e">
+<meta name="description" content="Your personal JAMB, WAEC & NECO exam coach with past questions, AI tutor, and personalized study plans.">
+<meta property="og:title" content="PrepMaster AI">
+<meta property="og:description" content="Your personal JAMB, WAEC & NECO exam coach with past questions, AI tutor, and personalized study plans.">
+<title>PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .hero-canvas {
+    background: radial-gradient(circle at 50% 10%, #1e3a8a 0%, #090f20 70%, #060914 100%);
+    color: #ffffff;
+    padding: 48px 20px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-canvas::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 40px;
+    background: linear-gradient(to top, var(--pm-bg-canvas), transparent);
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #7dd3fc;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    margin-bottom: 20px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .hero-mockup-wrapper {
+    max-width: 480px;
+    margin: 36px auto 0;
+    perspective: 1000px;
+  }
+  .hero-mockup-card {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 40px rgba(37, 99, 235, 0.25);
+    text-align: left;
+    color: #f8fafc;
+  }
+  .feature-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    align-items: center;
+    margin: 64px 0;
+  }
+  @media (min-width: 860px) {
+    .feature-row {
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+    }
+    .feature-row.reverse {
+      direction: rtl;
+    }
+    .feature-row.reverse > * {
+      direction: ltr;
+    }
+  }
+  .interactive-tab-btn {
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .interactive-tab-btn.active {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Navigation Bar -->
+<header style="background: rgba(9, 15, 32, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 14px 20px; position: sticky; top: 0; z-index: 50;">
+  <div style="max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+    <a href="/" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+      <img src="/icons/icon-192.png" width="34" height="34" style="border-radius: 9px;" alt="PrepMaster AI">
+      <div style="font-weight: 800; font-size: 1.15rem; color: #fff; letter-spacing: -0.02em;">
+        PrepMaster <span style="color: #38bdf8; font-size: 0.85rem; font-weight: 700;">AI</span>
+      </div>
+    </a>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <button onclick="promptPWAInstall()" class="pm-btn pm-btn-sm pm-pwa-install-trigger" style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+        <span style="display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          <span class="pm-desktop-only">Install App</span>
+        </span>
+      </button>
+      <a href="/login.html" class="pm-btn pm-btn-sm" style="color: #e2e8f0; background: transparent;">Log In</a>
+      <a href="/register.html" class="pm-btn pm-btn-sm pm-btn-primary">Start Free</a>
+    </div>
+  </div>
+</header>
+
+<!-- Hero Section with Real Product Mock Interface -->
+<section class="hero-canvas">
+  <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+    <div class="hero-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+      JAMB &bull; WAEC &bull; NECO &bull; Post-UTME 2026 Ready
+    </div>
+    <h1 style="color: #ffffff; font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 800; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 16px;">
+      Your Personal AI Exam Coach
+    </h1>
+    <p style="color: #94a3b8; font-size: clamp(1.05rem, 2vw, 1.25rem); max-width: 640px; margin: 0 auto 28px; line-height: 1.55;">
+      Real past questions, personalized study plans, instant step-by-step AI explanations, weak-topic rescue, and timed CBT practice &mdash; engineered around your target score.
+    </p>
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;">
+      <a href="/register.html" class="pm-btn pm-btn-lg pm-btn-primary" style="font-size: 1.05rem;">
+        Start Preparing Free
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </a>
+      <a href="#how-it-works" class="pm-btn pm-btn-lg" style="background: rgba(255,255,255,0.08); color: #ffffff; border: 1px solid rgba(255,255,255,0.18);">
+        See How It Works
+      </a>
+    </div>
+    
+    <!-- Install PWA Banner in Hero -->
+    <div style="max-width: 480px; margin: 0 auto 16px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.85rem;">
+      <div style="display: flex; align-items: center; gap: 8px; color: #cbd5e1;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+        <span>Install as app on your phone &bull; works anywhere</span>
+      </div>
+      <button onclick="promptPWAInstall()" style="background: #2563eb; color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem;">
+        Install
+      </button>
+    </div>
+
+    <!-- Live Product UI Mockup (Target Score & Next Best Move) -->
+    <div class="hero-mockup-wrapper">
+      <div class="hero-mockup-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div>
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.05em;">Exam Target &bull; JAMB 2026</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #ffffff;">Target: 280 Points</div>
+          </div>
+          <div style="text-align: right;">
+            <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+              Current Est: 243
+            </span>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #cbd5e1; margin-bottom: 6px;">
+            <span>Progress to Target</span>
+            <strong style="color: #38bdf8;">37 points to go</strong>
+          </div>
+          <div class="pm-progress" style="height: 10px; background: rgba(255, 255, 255, 0.1);">
+            <div class="pm-progress-bar" style="width: 86%;"></div>
+          </div>
+        </div>
+
+        <!-- Signature Next Best Move -->
+        <div style="background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 14px; padding: 14px; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px; color: #f59e0b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              Your Next Best Move
+            </div>
+            <span style="font-size: 0.75rem; color: #f87171; font-weight: 700;">54% Accuracy</span>
+          </div>
+          <div style="font-weight: 700; font-size: 0.98rem; color: #ffffff; margin-bottom: 4px;">Organic Chemistry &bull; Hydrocarbons</div>
+          <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
+            You struggled with isomerism and functional groups 3 times this week. Fixing this recovers 12 raw exam marks.
+          </p>
+          <a href="/register.html" class="pm-btn pm-btn-sm pm-btn-rescue" style="width: 100%;">
+            Start Rescue Session
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main Value Pillars -->
+<main class="pm-container" id="how-it-works" style="padding-top: 48px;">
+
+  <!-- Pillar 1: AI Coach that understands YOU -->
+  <div class="feature-row">
+    <div>
+      <div class="pm-badge pm-badge-primary" style="margin-bottom: 10px;">Intelligent Academic Coaching</div>
+      <h2 style="font-size: 1.85rem; margin-bottom: 14px;">An AI Tutor That Explains "Why", Not Just The Letter</h2>
+      <p style="font-size: 1rem; color: var(--pm-ink-body); line-height: 1.6; margin-bottom: 18px;">
+        PrepMaster AI doesn't just grade your answers &mdash; it pinpoints exactly why your chosen distractor was tempting, breaks down the syllabus formula step-by-step, and provides official marking scheme guidelines.
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.92rem; color: #1e293b;">
+          <span style="color: #10b981;">✓</span> Full step-by-step mathematical &amp; scientific working
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.92rem; color: #1e293b;">
+          <span style="color: #10b981;">✓</span> Examiner tips revealing common trap options
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.92rem; color: #1e293b;">
+          <span style="color: #10b981;">✓</span> Grounded in real past question bank (2000 &ndash; 2024)
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="pm-card" style="background: #ffffff; border: 1.5px solid #e2e8f0; box-shadow: var(--pm-shadow-lg); padding: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+          <div class="pm-coach-avatar" style="width: 32px; height: 32px; font-size: 14px;">AI</div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.9rem; color: #0f172a;">PrepMaster Coach</div>
+            <div class="subtle">Physics &bull; Mechanics &bull; Q14</div>
+          </div>
+        </div>
+        <div style="background: #f8fafc; border-left: 3px solid #ef4444; padding: 10px 12px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 12px;">
+          <strong>Your Answer: C (50 m)</strong> &mdash; <span style="color: #ef4444;">Incorrect</span><br>
+          <span class="subtle">Trap: You forgot to halve the acceleration in s = ut + &frac12;at&sup2;.</span>
+        </div>
+        <div style="background: #f0fdf4; border-left: 3px solid #10b981; padding: 10px 12px; border-radius: 6px; font-size: 0.85rem; line-height: 1.45;">
+          <strong>Correct Answer: B (100 m)</strong><br>
+          1. Initial velocity <em>u = 0</em> (rest).<br>
+          2. <em>s = (0)(10) + &frac12;(2)(10)&sup2; = 100 m</em>.<br>
+          <strong style="color: #047857; display: block; margin-top: 4px;">Exam Tip:</strong> Never confuse &frac12;at&sup2; with at&sup2; when accelerating from rest!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pillar 2: CBT Mock Simulation -->
+  <div class="feature-row reverse">
+    <div>
+      <div class="pm-badge pm-badge-amber" style="margin-bottom: 10px;">Exam Room CBT Simulation</div>
+      <h2 style="font-size: 1.85rem; margin-bottom: 14px;">Timed Examination Engine Built Like The Real Test</h2>
+      <p style="font-size: 1rem; color: var(--pm-ink-body); line-height: 1.6; margin-bottom: 18px;">
+        Train under real test pressures. Full question navigation grid, live timer, answered and flagged states, with instant diagnostic scorecards identifying your topic mastery.
+      </p>
+      <div style="display: flex; gap: 12px;">
+        <a href="/practice.html" class="pm-btn pm-btn-secondary">Test Drive CBT</a>
+      </div>
+    </div>
+    <div>
+      <div class="pm-card" style="background: #0f172a; color: #f8fafc; border: 1px solid rgba(255,255,255,0.12); box-shadow: var(--pm-shadow-xl);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 14px;">
+          <div>
+            <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">JAMB CBT &bull; MATHEMATICS</span>
+            <div style="font-weight: 700; color: #ffffff; font-size: 1rem;">Question 18 of 40</div>
+          </div>
+          <div style="background: rgba(37,99,235,0.25); border: 1px solid #3b82f6; color: #60a5fa; font-family: monospace; font-size: 1.1rem; font-weight: 700; padding: 4px 10px; border-radius: 6px;">
+            24:18
+          </div>
+        </div>
+        <p style="font-size: 0.95rem; color: #f1f5f9; margin-bottom: 14px;">
+          Find the roots of the quadratic equation <em>2x&sup2; - 7x + 3 = 0</em>.
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
+          <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem;">A. x = 3 or x = &frac12;</div>
+          <div style="background: #2563eb; border: 1px solid #60a5fa; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; color: #fff;">B. x = 3 or x = &frac12; [Selected]</div>
+        </div>
+        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+          <span style="width: 22px; height: 22px; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 10px;">1</span>
+          <span style="width: 22px; height: 22px; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 10px;">2</span>
+          <span style="width: 22px; height: 22px; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 10px;">3</span>
+          <span style="width: 22px; height: 22px; background: rgba(255,255,255,0.15); color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 10px;">4</span>
+          <span style="width: 22px; height: 22px; background: rgba(255,255,255,0.15); color: #fff; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 10px;">5</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pillar 3: Mistake Bank & Weak Topic Recovery -->
+  <div class="feature-row">
+    <div>
+      <div class="pm-badge pm-badge-emerald" style="margin-bottom: 10px;">Systematic Mastery</div>
+      <h2 style="font-size: 1.85rem; margin-bottom: 14px;">The Mistake Bank That Turns Errors Into A High Score</h2>
+      <p style="font-size: 1rem; color: var(--pm-ink-body); line-height: 1.6; margin-bottom: 18px;">
+        PrepMaster keeps track of every single missed question across practice, drills, and mock exams. Spaced repetition brings weak topics back at the optimal revision intervals until you achieve 100% mastery.
+      </p>
+      <a href="/register.html" class="pm-btn pm-btn-primary">Create Your Free Mistake Bank</a>
+    </div>
+    <div>
+      <div class="pm-card" style="box-shadow: var(--pm-shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="margin: 0; font-size: 1.05rem;">Weakest Topics (Revision Due)</h3>
+          <span class="pm-badge pm-badge-rose">3 Due Today</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 10px;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.9rem; color: #9f1239;">Probability &bull; Mathematics</div>
+              <div class="subtle" style="color: #be123c;">4 mistakes recently &bull; 40% accuracy</div>
+            </div>
+            <a href="/register.html" class="pm-btn pm-btn-sm pm-btn-rescue" style="padding: 6px 12px; font-size: 0.8rem;">Rescue</a>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.9rem; color: #92400e;">Electric Fields &bull; Physics</div>
+              <div class="subtle" style="color: #b45309;">3 mistakes recently &bull; 50% accuracy</div>
+            </div>
+            <a href="/register.html" class="pm-btn pm-btn-sm pm-btn-rescue" style="padding: 6px 12px; font-size: 0.8rem;">Rescue</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp Integration Callout -->
+  <div class="pm-card pm-card-hero-glow" style="margin: 64px 0 32px; padding: 36px 28px; text-align: center;">
+    <div style="display: inline-flex; align-items: center; gap: 8px; color: #16a34a; font-weight: 700; font-size: 0.9rem; margin-bottom: 12px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Also Works Seamlessly on WhatsApp
+    </div>
+    <h2 style="font-size: 1.8rem; margin-bottom: 10px;">One Unified Account Across Web &amp; WhatsApp</h2>
+    <p style="color: var(--pm-ink-muted); max-width: 580px; margin: 0 auto 20px;">
+      Practise questions while on low data on WhatsApp, then switch to your computer for timed CBT mock exams. Your streaks, XP, and study plan sync automatically.
+    </p>
+    <a href="/register.html" class="pm-btn pm-btn-primary">Get Started Now</a>
+  </div>
+
+</main>
+
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+</body>
+</html>

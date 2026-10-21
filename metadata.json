@@ -1,0 +1,8 @@
+{
+  "name": "PrepMaster AI",
+  "description": "Your personal JAMB, WAEC & NECO exam coach with past questions, AI tutor, and personalized study plans.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

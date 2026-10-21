@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Log In — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="background:var(--pm-bg-canvas);">
+
+<header style="padding:16px 20px; border-bottom:1px solid #e2e8f0; background:#fff; text-align:center;">
+  <a href="/" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none;">
+    <img src="/icons/icon-192.png" width="32" height="32" style="border-radius:8px;" alt="Logo">
+    <div style="font-weight:800; font-size:1.15rem; color:#0f172a;">
+      PrepMaster <span style="color:#2563eb;">AI</span>
+    </div>
+  </a>
+</header>
+
+<main class="pm-container-narrow" style="padding-top:40px;">
+  <div style="text-align:center; margin-bottom:24px;">
+    <h1 style="font-size:1.8rem; margin-bottom:6px;">Welcome Back</h1>
+    <p class="muted">Access your personalized exam command center</p>
+  </div>
+
+  <div class="pm-card" style="box-shadow:var(--pm-shadow-lg); padding:28px 24px;">
+    <form id="login-form">
+      <div class="pm-form-group">
+        <label class="pm-label" for="email">Email Address</label>
+        <input id="email" type="email" class="pm-input" required placeholder="name@example.com" autocomplete="email">
+      </div>
+
+      <div class="pm-form-group">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <label class="pm-label" for="password" style="margin:0;">Password</label>
+          <a href="/forgot-password.html" style="font-size:0.8rem; font-weight:600;">Forgot password?</a>
+        </div>
+        <input id="password" type="password" class="pm-input" required placeholder="Enter your password" autocomplete="current-password">
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px;">
+        <input type="checkbox" id="show-password" style="width:16px; height:16px;">
+        <label for="show-password" style="margin:0; font-size:0.85rem; color:#64748b; cursor:pointer;">Show password</label>
+      </div>
+
+      <div id="login-error" class="pm-card" style="display:none; background:#fff1f2; border-color:#fecdd3; color:#be123c; padding:12px; font-size:0.88rem; margin-bottom:16px;"></div>
+
+      <button id="submit-btn" type="submit" class="pm-btn pm-btn-primary pm-btn-lg pm-btn-block">
+        Log In
+      </button>
+    </form>
+
+    <div style="text-align:center; margin-top:20px; font-size:0.9rem; color:#64748b;">
+      Don't have an account yet? <a href="/register.html" style="font-weight:700;">Create Free Account</a>
+    </div>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+document.getElementById('show-password').addEventListener('change', (e) => {
+  document.getElementById('password').type = e.target.checked ? 'text' : 'password';
+});
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Logging in…';
+
+  try {
+    await api('/auth/login', {
+      method: 'POST',
+      body: {
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      },
+    });
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = params.get('next') || '/dashboard.html';
+  } catch (err) {
+    errEl.textContent = 'Incorrect email or password. Please verify your credentials.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Log In';
+  }
+});
+</script>
+</body>
+</html>

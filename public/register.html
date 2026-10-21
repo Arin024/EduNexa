@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Create Free Account — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="background:var(--pm-bg-canvas);">
+
+<header style="padding:16px 20px; border-bottom:1px solid #e2e8f0; background:#fff; text-align:center;">
+  <a href="/" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none;">
+    <img src="/icons/icon-192.png" width="32" height="32" style="border-radius:8px;" alt="Logo">
+    <div style="font-weight:800; font-size:1.15rem; color:#0f172a;">
+      PrepMaster <span style="color:#2563eb;">AI</span>
+    </div>
+  </a>
+</header>
+
+<main class="pm-container-narrow" style="padding-top:32px;">
+  <div style="text-align:center; margin-bottom:20px;">
+    <h1 style="font-size:1.8rem; margin-bottom:6px;">Start Preparing Free</h1>
+    <p class="muted">Join thousands of students smashing their target scores</p>
+  </div>
+
+  <div class="pm-card" style="box-shadow:var(--pm-shadow-lg); padding:28px 24px;">
+    <form id="register-form">
+      <div class="pm-form-group">
+        <label class="pm-label" for="name">Your Name</label>
+        <input id="name" class="pm-input" required placeholder="e.g. Amara Okafor" autocomplete="name">
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="email">Email Address</label>
+        <input id="email" type="email" class="pm-input" required placeholder="you@example.com" autocomplete="email">
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="phone">WhatsApp Phone Number</label>
+        <input id="phone" type="tel" class="pm-input" required placeholder="e.g. 08012345678 or 2348012345678" autocomplete="tel">
+        <div class="subtle" style="margin-top:4px;">Links your web prep to WhatsApp bot for low-data practice.</div>
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="password">Password (at least 8 characters)</label>
+        <input id="password" type="password" class="pm-input" required minlength="8" placeholder="Create a secure password" autocomplete="new-password">
+      </div>
+
+      <div id="register-error" class="pm-card" style="display:none; background:#fff1f2; border-color:#fecdd3; color:#be123c; padding:12px; font-size:0.88rem; margin-bottom:16px;"></div>
+
+      <button id="submit-btn" type="submit" class="pm-btn pm-btn-primary pm-btn-lg pm-btn-block">
+        Create My Account &rarr;
+      </button>
+    </form>
+
+    <div style="text-align:center; margin-top:20px; font-size:0.9rem; color:#64748b;">
+      Already have an account? <a href="/login.html" style="font-weight:700;">Log In</a>
+    </div>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const errEl = document.getElementById('register-error');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Setting up account…';
+
+  try {
+    await api('/auth/register', {
+      method: 'POST',
+      body: {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        password: document.getElementById('password').value,
+      },
+    });
+    window.location.href = '/onboarding.html';
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'Create My Account →';
+    const reason = err && err.data && err.data.error;
+    if (reason === 'EMAIL_TAKEN') {
+      errEl.textContent = 'That email is already registered. Please log in instead.';
+    } else if (reason === 'PHONE_ALREADY_REGISTERED') {
+      errEl.textContent = 'This phone number already has a password. Please log in.';
+    } else {
+      errEl.textContent = 'Please check your inputs (valid email, phone, and 8+ char password).';
+    }
+    errEl.style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>

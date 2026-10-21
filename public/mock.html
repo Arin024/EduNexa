@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070d1e">
+<title>CBT Examination Simulation — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .cbt-room-header {
+    background: #090f20;
+    color: #ffffff;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .cbt-timer-badge {
+    background: rgba(37, 99, 235, 0.2);
+    border: 1px solid #3b82f6;
+    color: #60a5fa;
+    font-family: var(--pm-font-mono);
+    font-size: 1.15rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 8px;
+    letter-spacing: 0.05em;
+  }
+  .cbt-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+    gap: 6px;
+    margin: 12px 0;
+  }
+  .cbt-palette-item {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1.5px solid #e2e8f0;
+    background: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .cbt-palette-item:hover {
+    border-color: #2563eb;
+  }
+  .cbt-palette-item.current {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+    color: #2563eb;
+  }
+  .cbt-palette-item.answered {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+  }
+</style>
+</head>
+<body style="padding-bottom: 24px;">
+
+<div id="cbt-room-topbar" style="display:none;" class="cbt-room-header">
+  <div style="max-width: 1024px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <div id="cbt-exam-tag" style="font-size: 0.78rem; text-transform: uppercase; color: #94a3b8; font-weight: 700;">JAMB CBT</div>
+      <div id="cbt-q-counter" style="font-size: 1.05rem; font-weight: 800; color: #fff;">Question 1 / 20</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div id="cbt-timer" class="cbt-timer-badge">00:00</div>
+      <button onclick="confirmSubmitExam()" class="pm-btn pm-btn-sm" style="background:#ef4444; color:#fff;">
+        Submit Exam
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" id="cbt-content">
+  <div class="pm-skeleton" style="height: 180px; margin-bottom: 16px;"></div>
+  <div class="pm-skeleton" style="height: 240px;"></div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Timed CBT Simulation');
+renderBottomNav();
+
+const LETTERS = ['a', 'b', 'c', 'd', 'e'];
+let questions = [];
+let answers = {}; // index -> letter
+let current = 0;
+let examMeta = null;
+let startedAt = null;
+let timerInterval = null;
+
+const SUBJECTS = ['Mathematics', 'English', 'Physics', 'Chemistry', 'Biology', 'Economics', 'Government'];
+
+function setupCBTLauncher() {
+  document.getElementById('site-topbar').style.display = 'block';
+  document.getElementById('cbt-room-topbar').style.display = 'none';
+
+  const content = document.getElementById('cbt-content');
+  content.innerHTML = `
+    <div class="pm-card" style="max-width: 600px; margin: 20px auto; padding: 28px 24px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom: 8px;">
+        <div style="width:38px; height:38px; background:#fdf2f8; color:#db2777; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+          ${getIcon('cbt', '', 22)}
+        </div>
+        <div>
+          <h2 style="margin:0; font-size:1.35rem;">CBT Examination Simulation</h2>
+          <span class="subtle">Official timed simulation &bull; No feedback until final submission</span>
+        </div>
+      </div>
+
+      <div class="pm-form-group" style="margin-top:20px;">
+        <label class="pm-label" for="exam">Target Exam</label>
+        <select id="exam" class="pm-select">
+          <option value="JAMB">JAMB (UTME 40-Score Scale)</option>
+          <option value="WAEC">WAEC (WASSCE Objective)</option>
+          <option value="NECO">NECO Senior Secondary</option>
+          <option value="POST-UTME">Post-UTME Screening</option>
+        </select>
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="subject">Examination Subject</label>
+        <select id="subject" class="pm-select">
+          ${SUBJECTS.map((s) => `<option value="${s.toLowerCase()}">${s}</option>`).join('')}
+        </select>
+      </div>
+
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:14px; margin-bottom:20px; font-size:0.88rem; color:#475569;">
+        <div style="font-weight:700; color:#0f172a; margin-bottom:4px;">Examination Rules:</div>
+        &bull; 20 Questions per simulation<br>
+        &bull; Live countdown timer running<br>
+        &bull; Full question jumper palette to flag and review answers<br>
+        &bull; Diagnostic scorecard and AI weakness analysis upon submission
+      </div>
+
+      <div id="cbt-error" class="pm-card" style="display:none; background:#fff1f2; border-color:#fecdd3; color:#be123c; padding:12px; margin-bottom:16px;"></div>
+
+      <button id="start-cbt-btn" class="pm-btn pm-btn-primary pm-btn-lg pm-btn-block">
+        Begin Examination
+        ${getIcon('arrowRight', '', 18)}
+      </button>
+    </div>
+  `;
+
+  document.getElementById('start-cbt-btn').addEventListener('click', startExam);
+}
+
+async function startExam() {
+  const exam = document.getElementById('exam').value;
+  const subject = document.getElementById('subject').value;
+  const content = document.getElementById('cbt-content');
+
+  content.innerHTML = `
+    <div class="pm-card pm-text-center" style="padding: 48px 20px;">
+      <div style="width: 48px; height: 48px; margin: 0 auto 16px; color: #2563eb;">
+        ${getIcon('refresh', 'animate-spin', 40)}
+      </div>
+      <h3 style="margin-bottom: 6px;">Entering Exam Room...</h3>
+      <p class="muted">Calibrating question set and clock for ${subjectLabel(subject)}</p>
+    </div>
+  `;
+
+  try {
+    const data = await api('/cbt/start', { method: 'POST', body: { exam, subject, count: 20 } });
+    questions = data.questions;
+    examMeta = { exam: data.exam, subject: data.subject };
+    answers = {};
+    current = 0;
+    startedAt = Date.now();
+
+    // Switch to focused examination UI
+    document.getElementById('site-topbar').style.display = 'none';
+    document.getElementById('site-nav').style.display = 'none';
+    document.getElementById('cbt-room-topbar').style.display = 'block';
+
+    timerInterval = setInterval(updateTimer, 1000);
+    renderQuestion();
+  } catch (err) {
+    setupCBTLauncher();
+    const errEl = document.getElementById('cbt-error');
+    if (errEl) {
+      if (err.status === 402) {
+        errEl.innerHTML = 'Full CBT Mock Exams require an active PrepMaster Pass. <a href="/premium.html" style="font-weight:700; color:#2563eb;">Upgrade to Premium</a> to take unlimited mock exams.';
+      } else {
+        errEl.textContent = 'Could not start examination for that subject right now. Please try another.';
+      }
+      errEl.style.display = 'block';
+    }
+  }
+}
+
+function updateTimer() {
+  const el = document.getElementById('cbt-timer');
+  if (!el || !startedAt) return;
+  const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+  const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  el.textContent = `${m}:${s}`;
+}
+
+function renderQuestion() {
+  const q = questions[current];
+  const content = document.getElementById('cbt-content');
+
+  // Update Exam Room Topbar
+  document.getElementById('cbt-exam-tag').textContent = `${examMeta.exam} CBT &bull; ${subjectLabel(examMeta.subject)}`;
+  document.getElementById('cbt-q-counter').textContent = `Question ${current + 1} of ${questions.length}`;
+
+  const optionsHtml = LETTERS.filter((l) => q.options[l]).map((l) => `
+    <button class="pm-option-item ${answers[current] === l ? 'selected' : ''}" data-letter="${l}">
+      <span class="pm-option-letter">${l.toUpperCase()}</span>
+      <span style="flex:1;">${q.options[l]}</span>
+    </button>
+  `).join('');
+
+  const paletteHtml = questions.map((_, i) => `
+    <button class="cbt-palette-item ${answers[i] ? 'answered' : ''} ${i === current ? 'current' : ''}" data-idx="${i}">
+      ${i + 1}
+    </button>
+  `).join('');
+
+  const answeredCount = Object.keys(answers).length;
+
+  content.innerHTML = `
+    <div class="pm-card" style="margin-top: 14px; box-shadow: var(--pm-shadow-md);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span class="subtle" style="font-weight:600;">Question ${current + 1}</span>
+        <span class="subtle">${answeredCount} / ${questions.length} answered</span>
+      </div>
+
+      <h2 style="font-size:1.25rem; font-weight:700; line-height:1.45; margin-bottom:20px; color:#0f172a;">
+        ${q.question}
+      </h2>
+      ${q.image ? `<div style="text-align:center; margin-bottom:16px;"><img src="${q.image}" style="max-height:220px; border-radius:10px; border:1px solid #e2e8f0;"></div>` : ''}
+
+      <div id="cbt-options-wrap">
+        ${optionsHtml}
+      </div>
+
+      <!-- Question Navigation Controls -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; gap:10px;">
+        <button id="prev-btn" class="pm-btn pm-btn-secondary" style="flex:1;" ${current === 0 ? 'disabled' : ''}>
+          Previous
+        </button>
+        <button id="next-btn" class="pm-btn pm-btn-primary" style="flex:1;">
+          ${current + 1 === questions.length ? 'Review & Submit' : 'Next'}
+        </button>
+      </div>
+    </div>
+
+    <!-- Question Jumper Palette -->
+    <div class="pm-card" style="padding:16px;">
+      <div style="font-weight:700; font-size:0.88rem; color:#475569; margin-bottom:8px;">
+        Question Palette (${answeredCount} Answered, ${questions.length - answeredCount} Pending)
+      </div>
+      <div class="cbt-palette-grid">
+        ${paletteHtml}
+      </div>
+    </div>
+  `;
+
+  // Option selection
+  document.querySelectorAll('#cbt-options-wrap .pm-option-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      answers[current] = btn.dataset.letter;
+      renderQuestion();
+    });
+  });
+
+  // Palette click
+  document.querySelectorAll('.cbt-palette-grid .cbt-palette-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      current = Number(btn.dataset.idx);
+      renderQuestion();
+    });
+  });
+
+  // Navigation handlers
+  document.getElementById('prev-btn').addEventListener('click', () => {
+    if (current > 0) { current--; renderQuestion(); }
+  });
+  document.getElementById('next-btn').addEventListener('click', () => {
+    if (current + 1 < questions.length) { current++; renderQuestion(); }
+    else { confirmSubmitExam(); }
+  });
+}
+
+function confirmSubmitExam() {
+  const answeredCount = Object.keys(answers).length;
+  const unansweredCount = questions.length - answeredCount;
+
+  const modal = document.createElement('div');
+  modal.className = 'pm-modal-overlay';
+  modal.id = 'cbt-confirm-modal';
+  modal.innerHTML = `
+    <div class="pm-modal-card pm-text-center">
+      <div style="width:48px; height:48px; background:#eff6ff; color:#2563eb; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;">
+        ${getIcon('cbt', '', 24)}
+      </div>
+      <h3 style="font-size:1.3rem; margin-bottom:6px;">Submit Examination?</h3>
+      <p style="color:#64748b; font-size:0.92rem; line-height:1.5; margin-bottom:18px;">
+        You have answered <strong>${answeredCount}</strong> of <strong>${questions.length}</strong> questions.
+        ${unansweredCount > 0 ? `<br><span style="color:#dc2626; font-weight:600;">You have ${unansweredCount} unanswered questions!</span>` : ''}
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button id="final-submit-btn" class="pm-btn pm-btn-primary pm-btn-lg">Yes, Finish &amp; Score</button>
+        <button onclick="document.getElementById('cbt-confirm-modal').remove()" class="pm-btn pm-btn-outline">Return to Questions</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('final-submit-btn').addEventListener('click', () => {
+    document.getElementById('cbt-confirm-modal').remove();
+    submitExamForGrading();
+  });
+}
+
+async function submitExamForGrading() {
+  if (timerInterval) clearInterval(timerInterval);
+  const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+
+  const content = document.getElementById('cbt-content');
+  content.innerHTML = `
+    <div class="pm-card pm-text-center" style="padding: 48px 20px;">
+      <div style="width: 48px; height: 48px; margin: 0 auto 16px; color: #2563eb;">
+        ${getIcon('refresh', 'animate-spin', 40)}
+      </div>
+      <h3 style="margin-bottom: 6px;">Grading Your Examination...</h3>
+      <p class="muted">Generating official score breakdown and weakness analysis</p>
+    </div>
+  `;
+
+  try {
+    const payloadAnswers = questions.map((q, i) => ({
+      token: q.token,
+      letter: answers[i] || '',
+      answer: answers[i] || '',
+    }));
+
+    const result = await api('/cbt/submit', {
+      method: 'POST',
+      body: {
+        exam: examMeta.exam,
+        subject: examMeta.subject,
+        total: questions.length,
+        answers: payloadAnswers,
+        elapsedSeconds,
+      },
+    });
+
+    renderExamScorecard(result);
+  } catch (err) {
+    showToast('Failed to grade exam. Please try again.');
+  }
+}
+
+function renderExamScorecard(res) {
+  // Restore normal topbar and navigation
+  document.getElementById('cbt-room-topbar').style.display = 'none';
+  document.getElementById('site-topbar').style.display = 'block';
+  document.getElementById('site-nav').style.display = 'flex';
+
+  const score = res.score || res.result || {};
+  const total = score.total || questions.length || 1;
+  const correct = score.correct || 0;
+  const percentage = score.percentage ?? Math.round((correct / total) * 100);
+  const elapsed = score.elapsedSeconds ?? elapsedSeconds ?? 0;
+  const m = Math.floor(elapsed / 60);
+  const s = elapsed % 60;
+  const timeFormatted = `${m}m ${s}s`;
+
+  const content = document.getElementById('cbt-content');
+  content.innerHTML = `
+    <div class="pm-card pm-text-center" style="max-width:580px; margin:20px auto; padding:32px 20px;">
+      <div style="width:64px; height:64px; background:${percentage >= 60 ? '#ecfdf5' : '#fff1f2'}; color:${percentage >= 60 ? '#10b981' : '#f43f5e'}; border-radius:20px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+        ${getIcon(percentage >= 60 ? 'award' : 'target', '', 32)}
+      </div>
+      <div style="font-size:0.82rem; text-transform:uppercase; color:#94a3b8; font-weight:700; letter-spacing:0.05em;">
+        ${examMeta.exam} CBT Results &bull; ${subjectLabel(examMeta.subject)}
+      </div>
+      <h1 style="font-size:2rem; margin:6px 0 20px; color:#0f172a;">
+        ${percentage >= 70 ? 'Distinction Performance! 🌟' : (percentage >= 50 ? 'Exam Passed &bull; Room to Climb' : 'Needs Reinforcement')}
+      </h1>
+
+      <!-- Big Score Banner -->
+      <div style="background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:20px; padding:24px; margin-bottom:20px;">
+        <div style="font-size:3.5rem; font-weight:800; color:#0f172a; line-height:1;">
+          ${correct} <span style="font-size:1.6rem; color:#94a3b8; font-weight:600;">/ ${total}</span>
+        </div>
+        <div style="font-size:1.3rem; font-weight:800; color:${percentage >= 60 ? '#10b981' : '#f59e0b'}; margin-top:8px;">
+          ${percentage}% Final Score
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:24px;">
+        <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+          <div style="font-size:1.15rem; font-weight:800; color:#10b981;">${correct}</div>
+          <div class="subtle">Correct</div>
+        </div>
+        <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+          <div style="font-size:1.15rem; font-weight:800; color:#ef4444;">${Math.max(0, total - correct)}</div>
+          <div class="subtle">Incorrect</div>
+        </div>
+        <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+          <div style="font-size:1.15rem; font-weight:800; color:#2563eb;">${timeFormatted}</div>
+          <div class="subtle">Time Used</div>
+        </div>
+      </div>
+
+      <!-- Recommended Next Action -->
+      <div style="background:#fffbeb; border:1.5px solid #fde68a; border-radius:14px; padding:16px; text-align:left; margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:6px; color:#b45309; font-weight:700; font-size:0.8rem; text-transform:uppercase;">
+          ${getIcon('zap', '', 16)} Recommended Next Action
+        </div>
+        <p style="margin:4px 0 12px; font-size:0.9rem; color:#475569;">
+          Review the questions you missed in the Mistake Bank to ensure you don't repeat them on exam day.
+        </p>
+        <a href="/mistakes.html" class="pm-btn pm-btn-rescue pm-btn-sm" style="width:100%;">
+          Open Mistake Bank for ${subjectLabel(examMeta.subject)}
+        </a>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button onclick="window.location.reload()" class="pm-btn pm-btn-primary pm-btn-lg">
+          Take Another Mock Exam
+        </button>
+        <a href="/dashboard.html" class="pm-btn pm-btn-secondary pm-btn-lg">
+          Back to Command Center
+        </a>
+      </div>
+    </div>
+  `;
+}
+
+requireLogin().then(() => {
+  setupCBTLauncher();
+});
+</script>
+</body>
+</html>

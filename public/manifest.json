@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "EduNexa AI - JAMB & WAEC Exam Coach",
+  "short_name": "EduNexa",
+  "description": "Fast, offline-ready CBT practice, AI tutor, and syllabus study system for Nigerian students.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#047857",
+  "background_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

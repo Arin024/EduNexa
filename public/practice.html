@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>Practice Past Questions — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .practice-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .feedback-box {
+    border-radius: var(--pm-radius-md);
+    padding: 16px;
+    margin-top: 16px;
+    animation: pmSlideUp 0.25s ease;
+  }
+  .feedback-correct {
+    background: #ecfdf5;
+    border: 1.5px solid #a7f3d0;
+    color: #065f46;
+  }
+  .feedback-incorrect {
+    background: #fff1f2;
+    border: 1.5px solid #fecdd3;
+    color: #9f1239;
+  }
+</style>
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" id="practice-content">
+  <div class="pm-skeleton" style="height: 160px; margin-bottom: 14px;"></div>
+  <div class="pm-skeleton" style="height: 240px;"></div>
+</main>
+
+<div id="site-nav"></div>
+<div id="site-footer"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('Practice Drills');
+renderBottomNav();
+
+const LETTERS = ['a', 'b', 'c', 'd', 'e'];
+let queue = [];
+let index = 0;
+let score = { correct: 0, answered: 0 };
+let isRescueMode = false;
+let rescueTopic = '';
+
+const SUBJECTS_LIST = [
+  'Mathematics', 'English', 'Physics', 'Chemistry', 'Biology',
+  'Economics', 'Government', 'Commerce', 'Accounting', 'Literature'
+];
+
+function setupPracticeLauncher(prefill) {
+  const params = new URLSearchParams(window.location.search);
+  isRescueMode = params.get('rescue') === '1';
+  rescueTopic = params.get('topic') || '';
+
+  const p = prefill || {
+    exam: params.get('exam') || 'JAMB',
+    subject: params.get('subject') || 'Mathematics',
+    count: 10
+  };
+
+  const content = document.getElementById('practice-content');
+
+  // If in Rescue Mode directly launched from Dashboard, trigger immediately
+  if (isRescueMode && p.subject) {
+    startPractice(p.exam, p.subject, p.count);
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="pm-card" style="max-width: 600px; margin: 20px auto; padding: 28px 24px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom: 8px;">
+        <div style="width:36px; height:36px; background:#eff6ff; color:#2563eb; border-radius:10px; display:flex; align-items:center; justify-content:center;">
+          ${getIcon('practice', '', 20)}
+        </div>
+        <div>
+          <h2 style="margin:0; font-size:1.35rem;">Custom Practice Drill</h2>
+          <span class="subtle">Official past questions with AI explanations</span>
+        </div>
+      </div>
+
+      <div class="pm-form-group" style="margin-top:20px;">
+        <label class="pm-label" for="exam-select">Target Examination</label>
+        <select id="exam-select" class="pm-select">
+          <option value="JAMB">JAMB (UTME)</option>
+          <option value="WAEC">WAEC (WASSCE)</option>
+          <option value="NECO">NECO</option>
+          <option value="POST-UTME">Post-UTME</option>
+        </select>
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="subject-select">Select Subject</label>
+        <select id="subject-select" class="pm-select">
+          ${SUBJECTS_LIST.map((s) => `<option value="${s.toLowerCase()}" ${s.toLowerCase() === p.subject.toLowerCase() ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="pm-form-group">
+        <label class="pm-label" for="count-select">Number of Questions</label>
+        <select id="count-select" class="pm-select">
+          <option value="5">5 Questions (Quick review)</option>
+          <option value="10" selected>10 Questions (Standard drill)</option>
+          <option value="15">15 Questions (Deep practice)</option>
+          <option value="20">20 Questions (Intensive)</option>
+        </select>
+      </div>
+
+      <div id="practice-error" class="pm-card" style="display:none; background:#fff1f2; border-color:#fecdd3; color:#be123c; padding:12px; margin-bottom:16px;"></div>
+
+      <button id="start-drill-btn" class="pm-btn pm-btn-primary pm-btn-lg pm-btn-block">
+        Start Drill Now
+        ${getIcon('arrowRight', '', 18)}
+      </button>
+    </div>
+  `;
+
+  document.getElementById('exam-select').value = p.exam;
+  document.getElementById('start-drill-btn').addEventListener('click', () => {
+    const exam = document.getElementById('exam-select').value;
+    const subject = document.getElementById('subject-select').value;
+    const count = document.getElementById('count-select').value;
+    startPractice(exam, subject, count);
+  });
+}
+
+async function startPractice(exam, subject, count) {
+  const content = document.getElementById('practice-content');
+  content.innerHTML = `
+    <div class="pm-card pm-text-center" style="padding: 48px 20px;">
+      <div style="width: 48px; height: 48px; margin: 0 auto 16px; color: #2563eb;">
+        ${getIcon('refresh', 'animate-spin', 40)}
+      </div>
+      <h3 style="margin-bottom: 6px;">Assembling Questions...</h3>
+      <p class="muted">Connecting to past question bank for ${subjectLabel(subject)} (${exam})</p>
+    </div>
+  `;
+
+  try {
+    const data = await api(`/practice/questions?exam=${encodeURIComponent(exam)}&subject=${encodeURIComponent(subject)}&count=${count}`);
+    queue = data.questions.map((q) => ({ ...q, exam: data.exam, subject: data.subject }));
+    index = 0;
+    score = { correct: 0, answered: 0 };
+    if (!queue.length) throw new Error('no_questions');
+    renderQuestion();
+  } catch (err) {
+    setupPracticeLauncher({ exam, subject, count });
+    const errEl = document.getElementById('practice-error');
+    if (errEl) {
+      errEl.textContent = 'Unable to load questions for that subject right now. Please try another subject.';
+      errEl.style.display = 'block';
+    }
+  }
+}
+
+function renderQuestion() {
+  const q = queue[index];
+  const content = document.getElementById('practice-content');
+  const progressPct = Math.round(((index + 1) / queue.length) * 100);
+
+  const optionsHtml = LETTERS.filter((l) => q.options[l]).map((l) => `
+    <button class="pm-option-item" data-letter="${l}">
+      <span class="pm-option-letter">${l.toUpperCase()}</span>
+      <span style="flex:1;">${q.options[l]}</span>
+    </button>
+  `).join('');
+
+  content.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        ${isRescueMode ? `
+          <span class="practice-badge" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a;">
+            ${getIcon('zap', '', 14)} RESCUE MODE
+          </span>
+        ` : ''}
+        <span class="practice-badge" style="background:#eff6ff; color:#2563eb;">
+          ${subjectLabel(q.subject)}
+        </span>
+        <span class="subtle">&bull; ${q.topic || 'General'}</span>
+      </div>
+      <div style="font-weight:700; font-size:0.88rem; color:#64748b;">
+        ${index + 1} of ${queue.length}
+      </div>
+    </div>
+
+    <div class="pm-progress" style="margin-bottom:16px;">
+      <div class="pm-progress-bar" style="width:${progressPct}%;"></div>
+    </div>
+
+    <div class="pm-card" style="box-shadow:var(--pm-shadow-md);">
+      ${q.section ? `<div class="subtle" style="font-style:italic; margin-bottom:8px;">${q.section}</div>` : ''}
+      <h2 style="font-size:1.25rem; font-weight:700; line-height:1.45; margin-bottom:20px; color:#0f172a;">
+        ${q.question}
+      </h2>
+      ${q.image ? `<div style="text-align:center; margin-bottom:16px;"><img src="${q.image}" style="max-height:240px; border-radius:10px; border:1px solid #e2e8f0;"></div>` : ''}
+
+      <div id="options-container">
+        ${optionsHtml}
+      </div>
+
+      <div id="feedback-area" style="display:none;"></div>
+      <div id="action-area" style="display:none; margin-top:16px;"></div>
+    </div>
+  `;
+
+  document.querySelectorAll('#options-container .pm-option-item').forEach((btn) => {
+    btn.addEventListener('click', () => submitAnswer(btn.dataset.letter));
+  });
+}
+
+async function submitAnswer(pickedLetter) {
+  const q = queue[index];
+  const buttons = document.querySelectorAll('#options-container .pm-option-item');
+  buttons.forEach((b) => b.disabled = true);
+
+  const pickedBtn = document.querySelector(`#options-container .pm-option-item[data-letter="${pickedLetter}"]`);
+  if (pickedBtn) pickedBtn.classList.add('selected');
+
+  try {
+    const res = await api('/practice/submit', {
+      method: 'POST',
+      body: {
+        exam: q.exam || 'JAMB',
+        subject: q.subject,
+        token: q.token,
+        letter: pickedLetter,
+        answer: pickedLetter,
+        source: isRescueMode ? 'drill' : 'practice'
+      },
+    });
+
+    score.answered++;
+    if (res.correct) score.correct++;
+
+    const correctL = (res.correctLetter || res.correctAnswer || '').toLowerCase();
+
+    // Color code options
+    buttons.forEach((b) => {
+      const l = (b.dataset.letter || '').toLowerCase();
+      if (l === correctL) {
+        b.classList.add('correct');
+        b.classList.remove('selected');
+      }
+      if (l === pickedLetter && !res.correct) {
+        b.classList.add('incorrect');
+      }
+    });
+
+    const feedbackEl = document.getElementById('feedback-area');
+    feedbackEl.className = 'feedback-box ' + (res.correct ? 'feedback-correct' : 'feedback-incorrect');
+    feedbackEl.style.display = 'block';
+
+    const xpEarned = res.xpGained ?? res.xpAwarded ?? (res.correct ? 10 : 3);
+    feedbackEl.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong style="font-size:1.05rem; display:flex; align-items:center; gap:6px;">
+          ${res.correct ? `✓ Correct Answer! (+${xpEarned} XP)` : `✗ Incorrect (Correct option is ${correctL.toUpperCase()})`}
+        </strong>
+      </div>
+      <p style="margin:0; font-size:0.92rem; line-height:1.45;">
+        ${res.solution ? res.solution : (res.correct ? 'Great job! You recognized the core syllabus rule.' : 'Review the concept to avoid this examiner trap.')}
+      </p>
+      <div style="margin-top:12px; display:flex; gap:10px;">
+        <button id="ask-coach-btn" class="pm-btn pm-btn-sm" style="background:#fff; border:1px solid #cbd5e1; color:#0f172a;">
+          ${getIcon('coach', '', 15)}
+          Ask AI Coach to Break This Down
+        </button>
+      </div>
+    `;
+
+    document.getElementById('ask-coach-btn').addEventListener('click', () => {
+      window.location.href = `/tutor.html?question=${encodeURIComponent(q.question)}&topic=${encodeURIComponent(q.topic || '')}&ans=${correctL}`;
+    });
+
+    const actionEl = document.getElementById('action-area');
+    actionEl.style.display = 'flex';
+    actionEl.innerHTML = `
+      <button id="next-btn" class="pm-btn pm-btn-primary pm-btn-block">
+        ${index + 1 < queue.length ? 'Next Question' : 'Finish Drill & View Results'}
+        ${getIcon('arrowRight', '', 16)}
+      </button>
+    `;
+
+    const advanceNext = () => {
+      index++;
+      if (index < queue.length) {
+        renderQuestion();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        renderCompletion();
+      }
+    };
+
+    document.getElementById('next-btn').addEventListener('click', advanceNext);
+
+    // Auto-scroll so feedback and next button are immediately in comfortable view
+    setTimeout(() => {
+      feedbackEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+
+  } catch (err) {
+    buttons.forEach((b) => b.disabled = false);
+    if (pickedBtn) pickedBtn.classList.remove('selected');
+    const msg = (err && err.data && err.data.error)
+      ? `Verification error (${err.data.error}). Please try again.`
+      : 'Failed to verify answer. Please check your connection.';
+    showToast(msg);
+  }
+}
+
+function renderCompletion() {
+  const content = document.getElementById('practice-content');
+  const pct = Math.round((score.correct / score.answered) * 100);
+
+  content.innerHTML = `
+    <div class="pm-card pm-text-center" style="padding: 36px 20px; max-width:540px; margin:20px auto;">
+      <div style="width:64px; height:64px; background:${pct >= 70 ? '#ecfdf5' : '#fffbeb'}; color:${pct >= 70 ? '#10b981' : '#f59e0b'}; border-radius:20px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+        ${getIcon(pct >= 70 ? 'award' : 'zap', '', 32)}
+      </div>
+      <h2 style="font-size:1.6rem; margin-bottom:6px;">
+        ${pct >= 70 ? 'Drill Completed!' : 'Good Effort! Keep Pushing'}
+      </h2>
+      <p class="muted">Here is your session score</p>
+
+      <div style="margin:24px 0; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:20px;">
+        <div style="font-size:3rem; font-weight:800; color:#0f172a; line-height:1;">
+          ${score.correct} <span style="font-size:1.5rem; color:#94a3b8; font-weight:600;">/ ${score.answered}</span>
+        </div>
+        <div style="font-size:1.1rem; font-weight:700; color:${pct >= 70 ? '#10b981' : '#f59e0b'}; margin-top:6px;">
+          ${pct}% Accuracy
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button onclick="window.location.reload()" class="pm-btn pm-btn-primary pm-btn-lg">
+          ${getIcon('refresh', '', 18)} Practice Another Subject
+        </button>
+        <a href="/dashboard.html" class="pm-btn pm-btn-secondary pm-btn-lg">
+          Return to Command Center
+        </a>
+      </div>
+    </div>
+  `;
+}
+
+requireLogin().then(() => {
+  setupPracticeLauncher();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b132b">
+<title>AI Academic Coach — PrepMaster AI</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .coach-context-bar {
+    background: #0f172a;
+    color: #ffffff;
+    border-radius: var(--pm-radius-lg);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .prompt-pill {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    color: #334155;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .prompt-pill:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<div id="site-topbar"></div>
+
+<main class="pm-container" style="max-width: 860px;">
+  <!-- Contextual Coaching Banner -->
+  <div class="coach-context-bar" id="coach-context-banner">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="pm-coach-avatar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        </div>
+        <div>
+          <div style="font-size:0.75rem; text-transform:uppercase; color:#38bdf8; font-weight:700; letter-spacing:0.05em;">Personal Academic Coach</div>
+          <h2 style="font-size:1.15rem; color:#fff; margin:0;" id="coach-header-title">Analyzing your syllabus performance...</h2>
+        </div>
+      </div>
+      <span class="pm-badge pm-badge-dark" id="coach-quota-badge">AI Sessions: Ready</span>
+    </div>
+
+    <!-- Suggested Fast Coaching Action Chips -->
+    <div style="margin-top:14px; display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;" id="coaching-chips">
+      <button class="prompt-pill" onclick="sendCustomPrompt('Let\'s spend 10 minutes fixing my biggest weak topic.')">
+        🎯 Fix Weakest Topic
+      </button>
+      <button class="prompt-pill" onclick="sendCustomPrompt('Quiz me on a high-yield Mathematics question.')">
+        ⚡ Quiz Me (High-Yield)
+      </button>
+      <button class="prompt-pill" onclick="sendCustomPrompt('Explain the trap examiners set in Organic Chemistry.')">
+        ⚠️ Examiner Traps
+      </button>
+      <button class="prompt-pill" onclick="sendCustomPrompt('Give me a 3-step memory trick for physics formulas.')">
+        💡 Physics Formula Trick
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages Container -->
+  <div class="pm-chat-container" id="chat-messages">
+    <!-- Messages injected dynamically -->
+  </div>
+</main>
+
+<!-- Fixed Composer Bar -->
+<div class="pm-composer-bar">
+  <!-- Photo Preview Tray -->
+  <div id="photo-preview-tray" style="display:none; max-width:860px; margin:0 auto 8px; padding:6px 14px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; display:none; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <img id="photo-preview-img" src="" style="width:36px; height:36px; border-radius:6px; object-fit:cover; border:1px solid #cbd5e1;" alt="Question Preview">
+      <span style="font-size:0.85rem; font-weight:600; color:#334155;">Question photo attached (ready to solve)</span>
+    </div>
+    <button type="button" onclick="clearAttachedPhoto()" class="pm-btn pm-btn-sm" style="color:#dc2626; background:transparent; padding:4px 8px;">✕ Remove</button>
+  </div>
+
+  <div class="pm-composer-inner">
+    <input type="file" id="photo-upload" accept="image/*" capture="environment" style="display:none;">
+    <button type="button" id="photo-btn" class="pm-btn pm-btn-secondary" style="border-radius:14px; padding:12px 14px; display:inline-flex; align-items:center; gap:6px;" title="Snap or upload textbook question">
+      <span id="photo-icon-slot"></span>
+      <span class="pm-desktop-only" style="font-size:0.85rem; font-weight:700;">Snap Photo</span>
+    </button>
+    <input type="text" id="chat-input" class="pm-input" placeholder="Type a question, formula, or snap a textbook photo..." style="border-radius:14px; padding:13px 16px; flex:1;">
+    <button id="chat-send-btn" class="pm-btn pm-btn-primary" style="border-radius:14px; padding:13px 20px;">
+      <span>Solve</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<div id="site-nav"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/site.js"></script>
+<script>
+renderTopbar('AI Coach');
+renderBottomNav();
+
+document.getElementById('photo-icon-slot').innerHTML = getIcon('camera', '', 18);
+
+let studentProfile = null;
+let currentPhotoAttachment = null; // { base64, mediaType }
+
+// Photo Upload Handling
+const photoUpload = document.getElementById('photo-upload');
+document.getElementById('photo-btn').addEventListener('click', () => {
+  photoUpload.click();
+});
+
+photoUpload.addEventListener('change', (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    const dataUrl = evt.target.result;
+    const [meta, base64] = dataUrl.split(',');
+    const mediaType = meta.split(':')[1]?.split(';')[0] || 'image/jpeg';
+    currentPhotoAttachment = { base64, mediaType, previewUrl: dataUrl };
+
+    document.getElementById('photo-preview-img').src = dataUrl;
+    document.getElementById('photo-preview-tray').style.display = 'flex';
+    document.getElementById('chat-input').placeholder = "Add optional notes or tap 'Solve' to analyze photo...";
+  };
+  reader.readAsDataURL(file);
+});
+
+function clearAttachedPhoto() {
+  currentPhotoAttachment = null;
+  document.getElementById('photo-upload').value = '';
+  document.getElementById('photo-preview-tray').style.display = 'none';
+  document.getElementById('chat-input').placeholder = "Ask your coach anything (e.g. 'Why is option B wrong in question 4?')";
+}
+
+function speakText(text) {
+  if (!('speechSynthesis' in window)) {
+    showToast('Text-to-speech not supported on this device.');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  // Strip markdown formatting for cleaner speech
+  const clean = text.replace(/[*_#`]/g, '').slice(0, 500);
+  const utter = new SpeechSynthesisUtterance(clean);
+  utter.rate = 1.0;
+  utter.pitch = 1.0;
+  window.speechSynthesis.speak(utter);
+}
+
+function addChatMessage(text, sender = 'coach', imagePreview = null) {
+  const container = document.getElementById('chat-messages');
+  const msgWrap = document.createElement('div');
+  msgWrap.className = `pm-chat-msg ${sender}`;
+
+  if (sender === 'coach') {
+    let formatted = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>');
+
+    const rawEscaped = text.replace(/"/g, '&quot;').replace(/'/g, "\\'");
+
+    msgWrap.innerHTML = `
+      <div class="pm-coach-avatar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+      </div>
+      <div class="pm-chat-bubble" style="flex:1;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:0.75rem; font-weight:700; color:#2563eb; text-transform:uppercase; letter-spacing:0.04em;">Step-by-Step AI Solution</span>
+          <button onclick="speakText('${rawEscaped.slice(0, 250)}')" class="pm-btn pm-btn-xs pm-btn-ghost" title="Listen to explanation" style="display:inline-flex; align-items:center; gap:4px; font-size:0.75rem; color:#64748b;">
+            ${getIcon('volume', '', 14)} Listen
+          </button>
+        </div>
+        ${formatted}
+      </div>
+    `;
+  } else {
+    msgWrap.innerHTML = `
+      <div class="pm-chat-bubble">
+        ${imagePreview ? `<img src="${imagePreview}" style="max-width:240px; border-radius:10px; margin-bottom:8px; display:block;" alt="Student Photo">` : ''}
+        ${text}
+      </div>
+    `;
+  }
+
+  container.appendChild(msgWrap);
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  const photo = currentPhotoAttachment;
+
+  if (!text && !photo) return;
+
+  input.value = '';
+  const photoPreview = photo ? photo.previewUrl : null;
+  clearAttachedPhoto();
+
+  addChatMessage(text || 'Solve this question from my photo step by step.', 'user', photoPreview);
+
+  // Thinking placeholder
+  const container = document.getElementById('chat-messages');
+  const thinkingWrap = document.createElement('div');
+  thinkingWrap.className = 'pm-chat-msg coach';
+  thinkingWrap.id = 'coach-thinking';
+  thinkingWrap.innerHTML = `
+    <div class="pm-coach-avatar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    </div>
+    <div class="pm-chat-bubble" style="color:#64748b; font-style:italic;">
+      ${photo ? 'Analyzing exam diagram & formulas from photo...' : 'Formulating step-by-step coaching breakdown...'}
+    </div>
+  `;
+  container.appendChild(thinkingWrap);
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+
+  try {
+    const payload = { message: text };
+    if (photo) {
+      payload.image = { base64: photo.base64, mediaType: photo.mediaType };
+    }
+    const res = await api('/tutor/ask', { method: 'POST', body: payload });
+    thinkingWrap.remove();
+    addChatMessage(res.answer, 'coach');
+  } catch (err) {
+    thinkingWrap.remove();
+    if (err.status === 429) {
+      addChatMessage("You have reached your daily free AI tutoring limit. Practice questions and drills are unlimited! Upgrade to Premium for continuous AI coaching.", 'coach');
+    } else {
+      addChatMessage("I'm analyzing the syllabus principles. Please check your connection or retry in a moment.", 'coach');
+    }
+  }
+}
+
+function sendCustomPrompt(text) {
+  document.getElementById('chat-input').value = text;
+  sendChat();
+}
+
+document.getElementById('chat-send-btn').addEventListener('click', sendChat);
+document.getElementById('chat-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat();
+  }
+});
+
+// Initial Setup
+(async () => {
+  try {
+    const me = await requireLogin();
+    studentProfile = me.profile || {};
+    const weakSub = studentProfile.weakSubject || 'Mathematics';
+    const exam = studentProfile.exam || 'JAMB';
+
+    document.getElementById('coach-header-title').textContent = `${exam} Coaching • Focus: ${subjectLabel(weakSub)}`;
+
+    // Check URL parameters for practice question handoff
+    const params = new URLSearchParams(window.location.search);
+    const passedQ = params.get('question');
+    const passedAns = params.get('ans');
+
+    if (passedQ) {
+      addChatMessage(`Hello! I saw you were working on this question:\n\n*"${passedQ}"*\n\nLet's break down why option *${(passedAns || '').toUpperCase()}* is the official correct answer and the exact steps to arrive at it.`, 'coach');
+      sendCustomPrompt(`Please give me the complete step-by-step breakdown and exam marking scheme for this question: "${passedQ}"`);
+    } else {
+      addChatMessage(`Hello ${me.user.name ? me.user.name.split(' ')[0] : 'there'}! I'm your PrepMaster AI Coach.\n\nI'm tuned for your *${exam}* goals. I've noted that *${subjectLabel(weakSub)}* has the biggest opportunity for quick score improvements.\n\nWhat would you like to master today? Ask me about any formula, syllabus topic, or past question trap.`, 'coach');
+    }
+  } catch {}
+})();
+</script>
+</body>
+</html>
