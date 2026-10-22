@@ -90,7 +90,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <a
-                  href="https://wa.me/?text=Check%20out%20PrepMaster%20AI%20to%20practice%20for%20JAMB%2C%20WAEC%20and%20NECO"
+                  href="https://wa.me/?text=Check%20out%20EduNexa%20AI%20to%20practice%20for%20JAMB%2C%20WAEC%20and%20NECO"
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
@@ -114,7 +114,7 @@ export const Footer: React.FC = () => {
           </div>
 
           <p className="text-[11px] leading-relaxed text-slate-400 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-            <strong>Important Disclaimer:</strong> PrepMaster AI is an independent educational technology platform designed to facilitate student learning, past question revision, and CBT test familiarity. It is not affiliated with, endorsed by, or sponsored by the Joint Admissions and Matriculation Board (JAMB), the West African Examinations Council (WAEC), or the National Examinations Council (NECO). All examination acronyms and subject syllabuses remain property of their respective examining bodies.
+            <strong>Important Disclaimer:</strong> EduNexa AI is an independent educational technology platform designed to facilitate student learning, past question revision, and CBT test familiarity. It is not affiliated with, endorsed by, or sponsored by the Joint Admissions and Matriculation Board (JAMB), the West African Examinations Council (WAEC), or the National Examinations Council (NECO). All examination acronyms and subject syllabuses remain property of their respective examining bodies.
           </p>
         </div>
       </div>

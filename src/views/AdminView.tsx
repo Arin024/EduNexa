@@ -308,7 +308,7 @@ export const AdminView: React.FC = () => {
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
             <ShieldAlert className="w-4 h-4" />
-            <span>PrepMaster National Syllabus & Question Engine</span>
+            <span>EduNexa National Syllabus & Question Engine</span>
             <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 px-2 py-0.5 rounded-full font-mono normal-case">
               Admin: christianarinze024@gmail.com
             </span>

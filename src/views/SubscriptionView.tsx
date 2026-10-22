@@ -24,12 +24,13 @@ import {
   XCircle,
   ChevronDown,
   ChevronUp,
+  ArrowLeft,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 
 export const SubscriptionView: React.FC = () => {
-  const { user, refreshUserData, addToast, triggerConfetti } = useApp();
+  const { user, refreshUserData, addToast, triggerConfetti, setActiveTab } = useApp();
   const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly' | 'termly' | 'annual'>('monthly');
   const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'card' | 'ussd'>('transfer');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -227,7 +228,7 @@ export const SubscriptionView: React.FC = () => {
         planId: selectedPlan,
         amountNgn: currentPlanObj.priceNgn,
         senderName: senderName.trim() || user?.fullName || 'Scholar',
-        narration: narration.trim() || `PrepMaster ${currentPlanObj.name}`,
+        narration: narration.trim() || `EduNexa ${currentPlanObj.name}`,
         reference,
       });
 
@@ -403,9 +404,20 @@ export const SubscriptionView: React.FC = () => {
 
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">
-              <Crown className="w-3.5 h-3.5 text-amber-400" />
-              <span>EduNexa VIP Eagle Pass</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('home')}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold border border-white/20 transition-all active:scale-95 shadow-xs"
+                title="Return to EduNexa Dashboard"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Dashboard</span>
+              </button>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-500/30">
+                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                <span>EduNexa VIP Eagle Pass</span>
+              </div>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
               Unlock All-Subject Exam Mastery

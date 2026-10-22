@@ -225,7 +225,7 @@ class DataStore {
     // 1. Default Student
     const studentUser: DbUser = {
       id: 'usr_student_demo',
-      email: 'student@prepmaster.ng',
+      email: 'student@edunexa.ng',
       phone: '+2348012345678',
       passwordHash: hashPassword('student123'),
       fullName: 'Chidubem Okafor',
@@ -536,7 +536,11 @@ class DataStore {
   }
 
   getUserByEmail(email: string): DbUser | undefined {
-    const user = Array.from(this.users.values()).find((u) => u.email.toLowerCase() === email.toLowerCase());
+    const clean = email.toLowerCase().trim();
+    const user = Array.from(this.users.values()).find((u) => {
+      const uEmail = u.email.toLowerCase();
+      return uEmail === clean || (clean === 'student@edunexa.ng' && uEmail === 'student@prepmaster.ng') || (clean === 'student@prepmaster.ng' && uEmail === 'student@edunexa.ng');
+    });
     return this.checkAndUpdateSubscriptionExpiration(user);
   }
 

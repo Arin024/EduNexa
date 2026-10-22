@@ -118,11 +118,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      // If the back event was triggered by dismissing an in-app modal or picker state
+      if (e.state?.modal || e.state?.picker) {
+        return;
+      }
       const hash = window.location.hash.replace('#', '') as NavTab;
       if (VALID_TABS.includes(hash)) {
         setActiveTabState(hash);
       } else if (e.state?.tab && VALID_TABS.includes(e.state.tab)) {
         setActiveTabState(e.state.tab);
+      } else {
+        // Fall back to the stored tab rather than dumping the user back to home
+        const stored = (sessionStorage.getItem('edunexa_active_tab') || localStorage.getItem('edunexa_active_tab')) as NavTab;
+        if (stored && VALID_TABS.includes(stored)) {
+          setActiveTabState(stored);
+        }
       }
     };
 

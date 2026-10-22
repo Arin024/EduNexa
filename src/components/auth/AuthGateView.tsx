@@ -148,7 +148,7 @@ export const AuthGateView: React.FC = () => {
   };
 
   const autofillStudent = () => {
-    setEmail('student@prepmaster.ng');
+    setEmail('student@edunexa.ng');
     setPassword('student123');
     setTab('login');
     setError(null);
@@ -279,7 +279,7 @@ export const AuthGateView: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="student@prepmaster.ng"
+                    placeholder="student@edunexa.ng"
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
                   />
                 </div>
@@ -543,7 +543,7 @@ export const AuthGateView: React.FC = () => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="student@prepmaster.ng"
+                    placeholder="student@edunexa.ng"
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -624,7 +624,7 @@ export const AuthGateView: React.FC = () => {
       {/* Footer attribution & copyright */}
       <footer className="max-w-5xl w-full mx-auto text-center pt-4 border-t border-slate-800 text-[11px] text-slate-500 z-10 min-w-0">
         <p>
-          PrepMaster AI • Designed & Built by{' '}
+          EduNexa AI • Designed & Built by{' '}
           <strong className="text-slate-400">Arinzechukwu Christian</strong> •{' '}
           <span className="text-emerald-500 font-semibold">Arinze Web Studios</span>
         </p>
