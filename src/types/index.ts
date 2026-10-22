@@ -2,6 +2,10 @@ export type ExamType = 'JAMB' | 'WAEC' | 'NECO';
 export type PreferredStudyTime = 'morning' | 'afternoon' | 'evening' | 'night';
 export type AcademicLevel = 'SS1' | 'SS2' | 'SS3' | 'remedial' | 'university_aspirant';
 
+export const AVAILABLE_EXAM_YEARS: number[] = [
+  2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035, 2036
+];
+
 export interface User {
   id: string;
   email: string;

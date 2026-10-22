@@ -15,6 +15,7 @@ import {
   Sparkles,
   ShieldCheck,
 } from 'lucide-react';
+import { AVAILABLE_EXAM_YEARS } from '../../types';
 
 export const AuthModal: React.FC = () => {
   const { authModal, setAuthModal, login, register, switchUserRole } = useApp();
@@ -398,8 +399,11 @@ export const AuthModal: React.FC = () => {
                     onChange={(e) => setExamYear(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium text-slate-800"
                   >
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
+                    {AVAILABLE_EXAM_YEARS.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

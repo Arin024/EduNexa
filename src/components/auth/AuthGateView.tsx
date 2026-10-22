@@ -18,6 +18,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import { PWAInstallButton } from '../PWAInstallButton';
+import { AVAILABLE_EXAM_YEARS } from '../../types';
 
 export const AuthGateView: React.FC = () => {
   const { login, register, switchUserRole } = useApp();
@@ -434,10 +435,13 @@ export const AuthGateView: React.FC = () => {
                   <select
                     value={examYear}
                     onChange={(e) => setExamYear(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 font-medium"
                   >
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
+                    {AVAILABLE_EXAM_YEARS.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { ExamType, PreferredStudyTime, AcademicLevel, OnboardingData } from '../../types';
+import { ExamType, PreferredStudyTime, AcademicLevel, OnboardingData, AVAILABLE_EXAM_YEARS } from '../../types';
 import {
   GraduationCap,
   Calendar,
@@ -276,8 +276,11 @@ export const OnboardingWizard: React.FC = () => {
                       onChange={(e) => setExamYear(Number(e.target.value))}
                       className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     >
-                      <option value={2025}>2025 Academic Session</option>
-                      <option value={2026}>2026 Academic Session</option>
+                      {AVAILABLE_EXAM_YEARS.map((yr) => (
+                        <option key={yr} value={yr}>
+                          {yr} Academic Session
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

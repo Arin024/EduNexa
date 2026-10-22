@@ -40,6 +40,7 @@ import {
   StudentGamificationSummary,
   GamificationConfig,
   Achievement,
+  AVAILABLE_EXAM_YEARS,
 } from '../types';
 
 export const ProfileView: React.FC = () => {
@@ -854,8 +855,11 @@ export const ProfileView: React.FC = () => {
                   onChange={(e) => setExamYear(Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 font-medium"
                 >
-                  <option value={2025}>2025 Examination Session</option>
-                  <option value={2026}>2026 Examination Session</option>
+                  {AVAILABLE_EXAM_YEARS.map((yr) => (
+                    <option key={yr} value={yr}>
+                      {yr} Examination Session
+                    </option>
+                  ))}
                 </select>
               </div>
 
